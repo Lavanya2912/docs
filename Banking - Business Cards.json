@@ -1,0 +1,724 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Banking - Business Cards",
+    "license": {
+      "name": "",
+      "url": ""
+    },
+    "version": "v1.0.0",
+    "description": "Swagger Documentation for Banking - Business Cards",
+    "termsOfService": "",
+    "contact": {
+      "name": "",
+      "url": ""
+    }
+  },
+  "paths": {
+    "/api/1.0/cards/{card_id}/unfreeze": {
+      "post": {
+        "operationId": "Unfreeze a card",
+        "tags": [],
+        "summary": "Unfreeze a card",
+        "description": "Unfreeze a card\n",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Unfreeze a card\n",
+            "headers": {}
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "summary": "",
+      "description": "",
+      "servers": [],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/card_id"
+        }
+      ]
+    },
+    "/api/1.0/cards/{card_id}/freeze": {
+      "post": {
+        "operationId": "Freeze a card",
+        "tags": [],
+        "summary": "Freeze a card ",
+        "description": "Freeze a card\n",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Freeze a card\n",
+            "headers": {}
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "summary": "",
+      "description": "",
+      "servers": [],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/card_id"
+        }
+      ]
+    },
+    "/api/1.0/cards/{card_id}": {
+      "get": {
+        "operationId": "Retrieve card details",
+        "tags": [],
+        "summary": "Retrieve card details",
+        "description": "Retrieve card details\n",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Retrieve card details\n",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardDetails"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "delete": {
+        "operationId": "Terminate a card",
+        "tags": [],
+        "summary": "Terminate a card",
+        "description": "Terminate a card\n",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Cards",
+            "headers": {}
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "patch": {
+        "operationId": "Update card details",
+        "tags": [],
+        "summary": "Update card details",
+        "description": "Update card details\n",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Update card details\n",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCardResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardDetails"
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "summary": "",
+      "description": "",
+      "servers": [],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/card_id"
+        }
+      ]
+    },
+    "/api/1.0/cards/{card_id}/sensitive-details": {
+      "get": {
+        "operationId": "Retrieve sensitive card details",
+        "tags": [],
+        "summary": "Retrieve sensitive card details",
+        "description": "Retrieve sensitive card details\n  ",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Retrieve sensitive card details\n",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardSensitiveResponse"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "summary": "",
+      "description": "",
+      "servers": [],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/card_id"
+        }
+      ]
+    },
+    "/api/1.0/cards": {
+      "get": {
+        "operationId": "Retrieve a list of cards",
+        "tags": [],
+        "summary": "Retrieve a list of cards",
+        "description": "Retrieve a list of cards\n",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/created_before"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retrieve a list of cards\n",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardDetailsArray"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "post": {
+        "operationId": "Create a card",
+        "tags": [],
+        "summary": "Create a card",
+        "description": "Create a card ..\n",
+        "externalDocs": {
+          "url": "",
+          "description": ""
+        },
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Cards",
+            "headers": {}
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardMetadataRequest"
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "summary": "retrive card ",
+      "description": "",
+      "servers": [],
+      "parameters": []
+    }
+  },
+  "components": {
+    "schemas": {
+      "CardSensitiveResponse": {
+        "type": "object",
+        "properties": {
+          "pan": {
+            "type": "string",
+            "example": "4111111111111111"
+          },
+          "cvv": {
+            "type": "string",
+            "example": "123"
+          },
+          "expiry": {
+            "type": "string",
+            "example": "06/2025"
+          }
+        }
+      },
+      "UpdateCardResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "aa14a9af-d7a7-4214-a743-lok818f74bd0"
+          },
+          "last_digits": {
+            "type": "string",
+            "example": "2671"
+          },
+          "expiry": {
+            "type": "string",
+            "example": "09/2027"
+          },
+          "state": {
+            "type": "string",
+            "example": "active"
+          },
+          "holder_id": {
+            "type": "string",
+            "example": "173ab846-de2a-1234-5678-160bd2e660e6"
+          },
+          "label": {
+            "type": "string",
+            "example": "New card label"
+          },
+          "virtual": {
+            "type": "boolean",
+            "example": true
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "f52c6c84-26b9-4e95-bbcf-99ed6523fb51"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "services"
+            }
+          },
+          "spending_limits": {
+            "type": "object",
+            "properties": {
+              "single": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 100
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              },
+              "week": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 300
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2022-09-15T11:04:11.047305Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "example": "2024-08-17T08:32:11.024721Z"
+          }
+        }
+      },
+      "CardDetailsArray": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      },
+      "CardDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "aa14a9af-d7a7-4214-a743-lok818f74bd0"
+          },
+          "last_digits": {
+            "type": "string",
+            "example": "2671"
+          },
+          "expiry": {
+            "type": "string",
+            "example": "09/2027"
+          },
+          "state": {
+            "type": "string",
+            "example": "active"
+          },
+          "holder_id": {
+            "type": "string",
+            "example": "173ab846-de2a-1234-5678-160bd2e660e6"
+          },
+          "label": {
+            "type": "string",
+            "example": "Kirby Janette"
+          },
+          "virtual": {
+            "type": "boolean",
+            "example": true
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "f52c6c84-26b9-4e95-bbcf-99ed6523fb51"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "restaurants"
+            }
+          },
+          "spend_program": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "example": "Office supplies"
+              }
+            }
+          },
+          "spending_limits": {
+            "type": "object",
+            "properties": {
+              "single": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 200.22
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              },
+              "month": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 200.44
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2022-09-15T11:04:11.047305Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "example": "2024-08-17T08:32:11.024721Z"
+          }
+        }
+      },
+      "CardResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "aa14a9af-d7a7-4214-a743-lok818f74bd0"
+          },
+          "last_digits": {
+            "type": "string",
+            "example": "2671"
+          },
+          "expiry": {
+            "type": "string",
+            "example": "09/2027"
+          },
+          "state": {
+            "type": "string",
+            "example": "active"
+          },
+          "holder_id": {
+            "type": "string",
+            "example": "173ab846-de2a-1234-5678-160bd2e660e6"
+          },
+          "label": {
+            "type": "string",
+            "example": "Kirby Janette"
+          },
+          "virtual": {
+            "type": "boolean",
+            "example": true
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "f52c6c84-26b9-4e95-bbcf-99ed6523fb51"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "restaurants"
+            }
+          },
+          "spending_limits": {
+            "type": "object",
+            "properties": {
+              "single": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 200.22
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              },
+              "week": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 200.44
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2022-09-15T11:04:11.047305Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "example": "2022-09-15T11:04:11.047305Z"
+          }
+        }
+      },
+      "CardMetadataRequest": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "example": "7a10f3eb-fe56-4699-9bd0-044a63508828"
+          },
+          "virtual": {
+            "type": "boolean",
+            "example": true
+          },
+          "holder_id": {
+            "type": "string",
+            "example": "173ab846-de2a-1234-5678-160bd2e660e6"
+          },
+          "label": {
+            "type": "string",
+            "example": "Kirby Janette"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "75aa436d-2a04-4ab9-af14-ed0955769b8c"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "groceries"
+            }
+          },
+          "spending_limits": {
+            "type": "object",
+            "properties": {
+              "single": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 200.22
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              },
+              "week": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 200.44
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "GBP"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "400": {
+        "description": "400 Bad request",
+        "headers": {}
+      }
+    },
+    "parameters": {
+      "card_id": {
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "name": "card_id"
+      },
+      "limit": {
+        "in": "query",
+        "required": false,
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "type": "integer",
+          "description": ""
+        },
+        "name": "limit"
+      },
+      "created_before": {
+        "in": "query",
+        "required": false,
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "type": "string",
+          "description": ""
+        },
+        "name": "created_before"
+      }
+    },
+    "examples": {},
+    "requestBodies": {},
+    "headers": {},
+    "securitySchemes": {},
+    "links": {},
+    "callbacks": {}
+  },
+  "servers": [
+    {
+      "x-schema": "https://",
+      "url": "https://acme-bank-hrrr.apiwiz.io/business-card",
+      "x-name": "https://acme-bank-hrrr.apiwiz.io/business-card",
+      "x-basePath": "business-card",
+      "description": "",
+      "variables": {
+        "url": {
+          "description": "",
+          "default": "example.com"
+        }
+      }
+    }
+  ],
+  "security": [],
+  "externalDocs": {
+    "url": ""
+  },
+  "tags": []
+}
