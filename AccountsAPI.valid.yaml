@@ -1,0 +1,435 @@
+openapi: 3.0.1
+info:
+  title: Accounts API
+  version: v1.0.0
+  description: >
+    Cleaned, validator-friendly spec derived from the provided AccountsAPI.json.
+    All refs/casing/styles fixed to satisfy swagger-parser.
+servers:
+  - url: https://sandboxapi.tonikbank.com/v1/accountlist
+    description: Sandbox Server
+
+tags:
+  - name: Accounts
+
+paths:
+  /banking/accounts:
+    get:
+      tags: [Accounts]
+      summary: Obtain a list of accounts
+      operationId: listAccounts
+      parameters:
+        - $ref: '#/components/parameters/openStatus'
+        - $ref: '#/components/parameters/accountType'
+        - $ref: '#/components/parameters/isOwned'
+        - $ref: '#/components/parameters/x-v'
+        - $ref: '#/components/parameters/participantId'
+        - $ref: '#/components/parameters/acceptHeader'
+        - $ref: '#/components/parameters/authorization'
+      responses:
+        '200':
+          description: Success
+          headers:
+            x-v:
+              $ref: '#/components/headers/x-v'
+            myHeader:
+              $ref: '#/components/headers/myHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBankingAccountList'
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '405': { $ref: '#/components/responses/Error' }
+        '406': { $ref: '#/components/responses/Error' }
+        '408': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '415': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+      security:
+        - oauth2: [read:accounts]
+
+  /banking/accounts/{accountId}/balance:
+    get:
+      tags: [Accounts]
+      summary: Obtain the balance for a single specified account
+      operationId: getAccountBalance
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/x-v'
+        - $ref: '#/components/parameters/participantId'
+        - $ref: '#/components/parameters/acceptHeader'
+      responses:
+        '200':
+          description: Success
+          headers:
+            x-v:
+              $ref: '#/components/headers/x-v'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBankingAccountBalanceList'
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+
+  /banking/accounts/{accountId}/transactions:
+    get:
+      tags: [Accounts]
+      summary: Obtain transactions for a specific account
+      operationId: getAccountTransactions
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/oldestDateTime'
+        - $ref: '#/components/parameters/newestDateTime'
+        - $ref: '#/components/parameters/minAmount'
+        - $ref: '#/components/parameters/maxAmount'
+        - $ref: '#/components/parameters/x-v'
+        - $ref: '#/components/parameters/participantId'
+        - $ref: '#/components/parameters/acceptHeader'
+      responses:
+        '200':
+          description: Success
+          headers:
+            x-v:
+              $ref: '#/components/headers/x-v'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBankingTransaction'
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+
+  /banking/accounts/{accountId}/{transactionId}:
+    get:
+      tags: [Accounts]
+      summary: Obtain detailed information on a transaction for a specific account
+      operationId: getAccountTransactionDetail
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/transactionId'
+        - $ref: '#/components/parameters/x-v'
+        - $ref: '#/components/parameters/participantId'
+        - $ref: '#/components/parameters/acceptHeader'
+      responses:
+        '200':
+          description: Success
+          headers:
+            x-v:
+              $ref: '#/components/headers/x-v'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBankingTransactionDetail'
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            read:accounts: Read accounts
+            write:transactions: Write transactions
+            read:created_transactions: Read created transactions
+  headers:
+    x-v:
+      description: The version of the API endpoint that the holder has responded with.
+      schema:
+        type: string
+    myHeader:
+      description: Placeholder example header
+      schema:
+        type: string
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResponseErrorList'
+  parameters:
+    x-v:
+      name: x-v
+      in: header
+      required: true
+      schema:
+        type: string
+    participantId:
+      name: participantId
+      in: header
+      required: true
+      schema:
+        type: string
+    acceptHeader:
+      name: Accept
+      in: header
+      required: false
+      schema:
+        type: string
+        example: application/json
+    authorization:
+      name: Authorization
+      in: header
+      required: true
+      schema:
+        type: string
+        example: Bearer eyJhbGciOi...
+    accountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+    transactionId:
+      name: transactionId
+      in: path
+      required: true
+      schema:
+        type: string
+    openStatus:
+      name: openStatus
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [OPEN, CLOSED, ALL]
+        default: ALL
+      style: form
+      explode: true
+    accountType:
+      name: accountType
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ["SAVINGS ACCOUNT", "CURRENT ACCOUNT", "WALLET ACCOUNT", "LOAN ACCOUNT"]
+      style: form
+      explode: true
+    isOwned:
+      name: isOwned
+      in: query
+      required: false
+      schema:
+        type: boolean
+      style: form
+      explode: true
+    oldestDateTime:
+      name: oldestDateTime
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    newestDateTime:
+      name: newestDateTime
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    minAmount:
+      name: minAmount
+      in: query
+      required: false
+      schema:
+        type: number
+    maxAmount:
+      name: maxAmount
+      in: query
+      required: false
+      schema:
+        type: number
+  schemas:
+    ResponseBankingAccountList:
+      type: object
+      required: [data, links, meta]
+      properties:
+        data:
+          type: object
+          required: [accounts]
+          properties:
+            accounts:
+              type: array
+              items:
+                $ref: '#/components/schemas/BankingAccount'
+        links:
+          $ref: '#/components/schemas/LinksPaginated'
+        meta:
+          $ref: '#/components/schemas/MetaPaginated'
+    ResponseBankingAccountBalanceList:
+      type: object
+      required: [data, links, meta]
+      properties:
+        data:
+          type: object
+          required: [balances]
+          properties:
+            balances:
+              type: array
+              items:
+                $ref: '#/components/schemas/BankingBalance'
+        links:
+          $ref: '#/components/schemas/LinksPaginated'
+        meta:
+          $ref: '#/components/schemas/MetaPaginated'
+    ResponseBankingTransaction:
+      type: object
+      required: [data, links, meta]
+      properties:
+        data:
+          type: object
+          required: [transactions]
+          properties:
+            transactions:
+              type: array
+              items:
+                $ref: '#/components/schemas/BankingTransaction'
+        links:
+          $ref: '#/components/schemas/LinksPaginated'
+        meta:
+          $ref: '#/components/schemas/MetaPaginated'
+    ResponseBankingTransactionDetail:
+      type: object
+      required: [data, links, meta]
+      properties:
+        data:
+          type: object
+          required: [transactionDetails]
+          properties:
+            transactionDetails:
+              type: array
+              items:
+                $ref: '#/components/schemas/BankingTransactionDetail'
+        links:
+          $ref: '#/components/schemas/LinksPaginated'
+        meta:
+          $ref: '#/components/schemas/MetaPaginated'
+    ResponseErrorList:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [code, title]
+            properties:
+              code:
+                type: string
+              title:
+                type: string
+              detail:
+                type: string
+    LinksPaginated:
+      type: object
+      properties:
+        first: { type: string, format: uri }
+        self:  { type: string, format: uri }
+        next:  { type: string, format: uri }
+        prev:  { type: string, format: uri }
+        last:  { type: string, format: uri }
+    MetaPaginated:
+      type: object
+      properties:
+        totalRecords: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+    BankingAccount:
+      type: object
+      required: [accountId, accountType, creationDate, displayName, accountOwnership, maskedNumber, productName]
+      properties:
+        accountId:
+          type: string
+          example: 000-0000-00000-0
+        accountType:
+          type: string
+          enum: ["SAVINGS ACCOUNT", "CURRENT ACCOUNT", "WALLET ACCOUNT", "LOAN ACCOUNT"]
+        creationDate:
+          type: string
+          format: date
+        displayName:
+          type: string
+        nickname:
+          type: string
+        openStatus:
+          type: string
+          enum: [OPEN, CLOSED, ALL]
+          default: OPEN
+        isOwned:
+          type: boolean
+          default: true
+        accountOwnership:
+          type: string
+          enum: ["UNKNOWN", "ONE PARTY", "TWO PARTY", "MANY PARTY", "OTHER"]
+        maskedNumber:
+          type: string
+        productName:
+          type: string
+    BankingBalance:
+      type: object
+      required: [accountId, currentBalance, availableBalance]
+      properties:
+        accountId:
+          type: string
+        currentBalance:
+          type: number
+          example: 2546.87
+        availableBalance:
+          type: number
+          description: Available amount for immediate use.
+        creditLimit:
+          type: number
+          default: 0
+        currency:
+          type: string
+          default: PHP
+        purses:
+          type: array
+          items:
+            type: object
+            properties:
+              currency: { type: string }
+              balance: { type: number }
+    BankingTransaction:
+      type: object
+      required: [accountId, transactionId, executionDateTime, transactionAmount, isDetailAvailable]
+      properties:
+        accountId: { type: string }
+        transactionId: { type: string }
+        transactionReferenceId: { type: string }
+        executionDateTime:
+          type: string
+          format: date-time
+        transactionAmount: { type: number }
+        transactionCurrency: { type: string, default: PHP }
+        isDetailAvailable: { type: boolean }
+    BankingTransactionDetail:
+      allOf:
+        - $ref: '#/components/schemas/BankingTransaction'
+        - type: object
+          required: [transactionType, transactionStatus]
+          properties:
+            transactionType: { type: string }
+            transactionStatus: { type: string }
+            transactionDescription: { type: string }
+            postingDateTime: { type: string, format: date-time }
+            valueDateTime: { type: string, format: date-time }
