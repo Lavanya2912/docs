@@ -1,0 +1,2787 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Accounts",
+    "description": "# Introduction\n summary: Proposed Modified API for use in AccountList\nThis specification is in line with the version 0.3 of the specifcations found in confluence.\n\nUse cases\nDuring discussions on the version specificated above we expect to enhance the use cases as follows \n1) Validate the End Points for each type of API (Account Information, Payment Initiation and Subscription).\n2) Validate the Fields needed for each end point.\n3) Validate the Formats of the fields needed for each end point.\n4) Validate any other Query parameters, header parameters for each end point.\n5) Create Enumerations (code lists).\n6) Create specific types and Create complex types.\n\nSecurity and OAUTH\nDuring discussion on the version specificated above we will fully define the OAUTH endpoints and update the security context.\n",
+    "termsOfService": "",
+    "contact": {
+      "name": "Tonik Support",
+      "url": "https://developer.tonikbank.com",
+      "email": "support@tonikbank.com"
+    },
+    "license": {
+      "name": "Copywrite Open Banking Exchange 2023",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "v1.0.0"
+  },
+  "externalDocs": {
+    "description": "Full Documentation of Colombian Open Finance API Draft Standard",
+    "url": "https://www.example.com"
+  },
+  "servers": [
+    {
+      "url": "https://sandboxapi.tonikbank.com/v1/accountlist",
+      "description": "Sandbox Server",
+      "variables": {}
+    }
+  ],
+  "tags": [
+    {
+      "name": "APIs",
+      "description": "Names and definitions of the APIs.\n* Accounts:The (Banking) Accounts API returns list or detail of bank accounts, account balances, account details, transactions and transaction details\n* Payments:The (Banking) Payments API allows the creation and the cancellation of a payment, and to get the status that has been created\n* Subscriptions:The Subscriptions API allows the creation of a customer record, and the creation of a customer account, along with the uploading of KYC data.\n* Consent\n* Authentication\n* Configuration"
+    },
+    {
+      "name": "Account Information API Use Cases",
+      "description": "Name, summary and description of each Account Information API use case.\n* List Accounts:Obtain a list of accounts The List Accounts API allows a third party to obtain a list of accounts on the request of a customer. A list of accounts will be returned, and should reflect the list of accounts that the same customer would see if they accessed their account through a mobile app or web browser. A query parameter allows the list of accounts returned to be filtered by \"open\" and \"closed\" status.\n* Get Account Balance:Obtain the balance for a single specified account The Get Account Balance API allows a third party to obtain the balance for a specific account on the request of a customer. The request returns the current balance, but also returns other balances, such as the available balance and credit limits, if appropriate.\n* List Transactions:Obtain transactions for a specific account The List Transactions API allows a third party to obtain a list of transactions for a specific account on the request of a customer. Each transaction can contain a types, status, description, posting date, amount, currency reference.\n* Get Transaction Detail:Obtain detailed information on a transaction for a specific account The List Transaction detail API allows a third party to obtain more detailed information (where it exists) on a specific transaction on the request of a customer. Transaction detail can contain information on the payee or payer, end to end IDs and purpose codes."
+    },
+    {
+      "name": "Payment Initiation API Use Cases",
+      "description": "Name, summary and description of each Payment Initiation API use case.\n* Make Payment:Make a bank payment The Make Payment API allows a third party to initiate a payment on the request of a customer. A positive API response code indicated whether the payment initiation has been successful or not, i.e. whether the financial institution has successfully accepted the payment instruction, not whether the payment itself is credited correctly. The API returns a PaymentId, which is then used to track the progress of the payment itself.\n* Cancel Payment:Cancel a bank payment The Cancel Payment API allows a third party to cancel a payment that they previously initiated, on the request of a customer. The API returns a PaymentId, which is then used to track the progress of the payment itself.\n* Get Payment Status:Get the status of a payment The Get Payment Status API allows a third party to track a payment that they previously initiated, on the request of a customer. The PaymentId is used as the reference for the payment. The API returns a PaymentId, which is then used to track the progress of the payment itself. ISO20022 codes are used to show the status of the payment."
+    },
+    {
+      "name": "Subscription API Use Cases",
+      "description": "Name, summary and description of each Subscription API use case.\n* Create Customer:Create a banking customer record The Create Customer API allows a third party to create a customer record, on the request of a customer. If successful, the API returns a Customer ID that allows that customer to be references subsequently.\n* Upload KYC data:Upload the necessary KYC Documentation for a specific Customer The upload KYC data API allows a third party to upload required AML data to support the onboarding of the customer and allow a financial institution to meet its KYC obligations. The CustomerID is used as a reference to the Customer record.\n* Create account:Subscribe to a banking account The create Account API allows a third party to request the opening of a bank account on the request of a customer. The CustomerID is used as a reference to the Customer record."
+    }
+  ],
+  "paths": {
+    "/banking/accounts": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Obtain a list of accounts",
+        "description": "The List Accounts API allows a third party to obtain a list of accounts on the request of a customer. A list of accounts will be returned, and should reflect the list of accounts that the same customer would see if they accessed their account through a mobile app or web browser. A query parameter allows the list of accounts returned to be filtered by \"open\" and \"closed\" status.",
+        "operationId": "listAccounts",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/openStatus_query"
+          },
+          {
+            "$ref": "#/components/parameters/accountType_query"
+          },
+          {
+            "$ref": "#/components/parameters/isOwned_query"
+          },
+          {
+            "$ref": "#/components/parameters/x-v_header"
+          },
+          {
+            "$ref": "#/components/parameters/participantId_header"
+          },
+          {
+            "$ref": "#/components/parameters/accept_header"
+          },
+          {
+            "$ref": "#/components/parameters/Authorization_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "x-v": {
+                "description": "The version of the API endpoint that the holder has responded with.",
+                "schema": {
+                  "type": "string",
+                  "example": "1"
+                }
+              },
+              "myHeader": {
+                "$ref": "#/components/headers/myHeader"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBankingAccountList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [
+          {
+            "oauth2": [
+              "read:created_transactions",
+              "write:transactions",
+              "read:accounts"
+            ]
+          }
+        ],
+        "servers": []
+      },
+      "servers": [],
+      "parameters": []
+    },
+    "/banking/accounts/{accountId}/balance": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Obtain the balance for a single specified account",
+        "description": "The Get Account Balance API allows a third party to obtain the balance for a specific account on the request of a customer. The request returns the current balance, but also returns other balances, such as the available balance and credit limits, if appropriate.",
+        "operationId": "getAccountBalance",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accountId_path"
+          },
+          {
+            "$ref": "#/components/parameters/openStatus_query"
+          },
+          {
+            "$ref": "#/components/parameters/accountType_query"
+          },
+          {
+            "$ref": "#/components/parameters/isOwned_query"
+          },
+          {
+            "$ref": "#/components/parameters/x-v_header"
+          },
+          {
+            "$ref": "#/components/parameters/participantId_header"
+          },
+          {
+            "$ref": "#/components/parameters/accept_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "x-v": {
+                "description": "The version of the API endpoint that the holder has responded with.",
+                "style": "SIMPLE",
+                "explode": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseBankingAccountBalanceList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "servers": [],
+      "parameters": []
+    },
+    "/banking/accounts/{accountId}/transactions": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Obtain transactions for a specific account.",
+        "description": "The List Transactions API allows a third party to obtain a list of transactions for a specific account on the request of a customer. Each transaction can contain a types, status, description, posting date, amount, currency reference.",
+        "operationId": "getAccountTransactions",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accountId_path"
+          },
+          {
+            "$ref": "#/components/parameters/oldestDateTime_query"
+          },
+          {
+            "$ref": "#/components/parameters/newestDateTime_query"
+          },
+          {
+            "$ref": "#/components/parameters/minAmount_query"
+          },
+          {
+            "$ref": "#/components/parameters/maxAmount_query"
+          },
+          {
+            "$ref": "#/components/parameters/x-v_header"
+          },
+          {
+            "$ref": "#/components/parameters/participantId_header"
+          },
+          {
+            "$ref": "#/components/parameters/accept_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "x-v": {
+                "description": "The version of the API endpoint that the holder has responded with.",
+                "style": "SIMPLE",
+                "explode": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBankingTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "servers": [],
+      "parameters": []
+    },
+    "/banking/accounts/{accountId}/{transactionId}": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Obtain detailed information on a transaction for a specific account",
+        "description": "The List Transaction detail API allows a third party to obtain more detailed information (where it exists) on a specific transaction on the request of a customer. Transaction detail can contain information on the payee or payer, end to end IDs and purpose codes.",
+        "operationId": "getAccountTransactionDetail",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accountId_path"
+          },
+          {
+            "$ref": "#/components/parameters/transactionId_path"
+          },
+          {
+            "$ref": "#/components/parameters/x-v_header"
+          },
+          {
+            "$ref": "#/components/parameters/participantId_header"
+          },
+          {
+            "$ref": "#/components/parameters/accept_header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "x-v": {
+                "description": "The version of the API endpoint that the holder has responded with.",
+                "style": "SIMPLE",
+                "explode": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBankingTransactionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseErrorList"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {},
+        "deprecated": false,
+        "security": [],
+        "servers": []
+      },
+      "servers": [],
+      "parameters": []
+    }
+  },
+  "components": {
+    "schemas": {
+      "responseBankingAccountList": {
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/bankingAccount"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "accounts": [
+              {
+                "accountId": "accountId",
+                "accountType": "accountType",
+                "creationDate": "creationDate",
+                "displayName": "displayName",
+                "nickname": "nickname",
+                "openStatus": "OPEN",
+                "isOwned": true,
+                "accountOwnership": "UNKNOWN",
+                "maskedNumber": "maskedNumber",
+                "productName": "productName"
+              },
+              {
+                "accountId": "accountId",
+                "accountType": "accountType",
+                "creationDate": "creationDate",
+                "displayName": "displayName",
+                "nickname": "nickname",
+                "openStatus": "OPEN",
+                "isOwned": true,
+                "accountOwnership": "UNKNOWN",
+                "maskedNumber": "maskedNumber",
+                "productName": "productName"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "ResponseBankingAccountBalanceList": {
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/bankingBalance"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "balances": [
+              {
+                "accountId": "accountId",
+                "currentBalance": "currentBalance",
+                "availableBalance": "availableBalance",
+                "creditLimit": "creditLimit",
+                "currency": "currency",
+                "purses": "purses"
+              },
+              {
+                "accountId": "accountId",
+                "currentBalance": "currentBalance",
+                "availableBalance": "availableBalance",
+                "creditLimit": "creditLimit",
+                "currency": "currency",
+                "purses": "purses"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responseBankingTransaction": {
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/bankingTransaction"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "bankingTransaction": [
+              {
+                "accountId": "accountId",
+                "transactionId": "transactionId",
+                "transactionReferenceId": "transactionReferenceId",
+                "executionDateTime": "executionDateTime",
+                "transactionAmount": "transactionAmount",
+                "transactionCurrency": "transactionCurrency",
+                "isDetailAvailable": "isDetailAvailable"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responseBankingTransactionDetail": {
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/bankingTransactionDetail"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "bankingTransactionDetail": [
+              {
+                "accountId": "accountId",
+                "transactionId": "transactionId",
+                "transactionReferenceId": "transactionReferenceId",
+                "transactionType": "transactionType",
+                "transactionStatus": "transactionStatus",
+                "transactionDescription": "transactionDescription",
+                "postingDateTime": "postingDateTime",
+                "valueDateTime": "valueDateTime",
+                "executionDateTime": "executionDateTime",
+                "transactionAmount": "transactionAmount",
+                "transactionCurrency": "transactionCurrency",
+                "beneficiaryName": "beneficiaryName",
+                "isDetailAvailable": "isDetailAvailable"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responsePaymentInitiation": {
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/paymentInitiationSimple"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "paymentInitiation": [
+              {
+                "paymentStatus": "paymentStatus",
+                "paymentId": "paymentId",
+                "paymentFees": "paymentFees",
+                "paymentFeeIndicator": "paymentFeeIndicator"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responseBankingPaymentStatus": {
+        "required": [
+          "data",
+          "links",
+          "meta",
+          "paymentStatus"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/paymentStatus"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "paymentStatus": [
+              {
+                "paymentStatus": "paymentStatus",
+                "fundsAvailable": "fundsAvailable"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responseBankingCreateCustomer": {
+        "required": [
+          "customerId",
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/bankingCreateCustomerResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "customerId": [
+              {
+                "customerId": "customerId"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responseBankingProductSubscribe": {
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/bankingProductSubscribeResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "applicationId": [
+              {
+                "applicationId": "applicationId",
+                "redirectUrl": "redirectUrl"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responseAuthorisationCode": {
+        "required": [
+          "code",
+          "state"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/authorisationCodeResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "responseType": [
+              {
+                "code": "code",
+                "state": "state"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "responseAuthorisationToken": {
+        "required": [
+          "accessToken",
+          "tokenType"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/authorisationTokenResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaPaginated"
+          },
+          "links": {
+            "$ref": "#/components/schemas/linksPaginated"
+          }
+        },
+        "example": {
+          "data": {
+            "responseType": [
+              {
+                "accessToken": "accessToken",
+                "tokenType": "tokenType",
+                "expiresIn": "expiresIn",
+                "refreshToken": "refreshToken",
+                "scope": "scope"
+              }
+            ]
+          },
+          "meta": {
+            "totalRecords": 0,
+            "totalPages": 6
+          },
+          "links": {
+            "next": "next",
+            "last": "last",
+            "prev": "prev",
+            "self": "self",
+            "first": "first"
+          }
+        }
+      },
+      "bankingAccount": {
+        "required": [
+          "accountId",
+          "accountOwnership",
+          "accountType",
+          "creationDate",
+          "displayName",
+          "maskedNumber",
+          "productName"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "The ID of the account (i.e. the Account Number) that the customer would see on a statement or other documentation.",
+            "example": "000-0000-00000-0"
+          },
+          "accountType": {
+            "type": "string",
+            "description": "The category to which a product or account belongs.",
+            "example": "SAVINGS ACCOUNT",
+            "enum": [
+              "SAVINGS ACCOUNT",
+              "CURRENT ACCOUNT",
+              "WALLET ACCOUNT",
+              "LOAN ACCOUNT"
+            ]
+          },
+          "creationDate": {
+            "type": "string",
+            "description": "Date that the account was created (if known)",
+            "example": "yyyy/mm/dd"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "The display name of the account as defined by the bank. This should not incorporate account numbers or PANs. If it does the values should be masked according to the rules of the MaskedAccountString common type.",
+            "example": "John"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "A customer supplied nick name for the account.",
+            "example": "john123"
+          },
+          "openStatus": {
+            "type": "string",
+            "description": "Open or closed status for the account. If not present then OPEN is assumed.",
+            "example": "OPEN",
+            "enum": [
+              "OPEN",
+              "CLOSED",
+              "ALL"
+            ]
+          },
+          "isOwned": {
+            "type": "boolean",
+            "description": "Flag indicating that the customer associated with the authorisation is an owner of the account. Does not indicate sole ownership, however. If not present then 'true' is assumed."
+          },
+          "accountOwnership": {
+            "type": "string",
+            "description": "Value indicating the number of customers that have ownership of the account, according to the data holder's definition of account ownership. Does not indicate that all account owners are eligible consumers.",
+            "example": "TWO PARTY",
+            "enum": [
+              "UNKNOWN",
+              "ONE PARTY",
+              "TWO PARTY",
+              "MANY PARTY",
+              "OTHER"
+            ]
+          },
+          "maskedNumber": {
+            "type": "string",
+            "description": "A masked version of the account. Whether BSB/Account Number, Credit Card PAN or another number."
+          },
+          "productName": {
+            "type": "string",
+            "description": "The unique identifier of the account as defined by the data holder (akin to model number for the account)."
+          }
+        }
+      },
+      "bankingBalance": {
+        "required": [
+          "accountId",
+          "availableBalance",
+          "currentBalance"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "The ID of the account (i.e. the Account Number) that the customer would see on a statement or other documentation",
+            "example": "000-0000-00000-0"
+          },
+          "currentBalance": {
+            "type": "string",
+            "description": "The balance of the account at this time. Should align to the balance available via other channels such as Internet Banking. Assumed to be negative if the customer has money owing.",
+            "example": "2546.87"
+          },
+          "availableBalance": {
+            "type": "boolean",
+            "description": "Represents the balance availability requested by the user. If the user wants to verify balance for a transfer of PHP500, then the result will either be TRUE for availability of funds needed, or false otherwise."
+          },
+          "creditLimit": {
+            "type": "string",
+            "description": "Object representing the maximum amount of credit that is available for this account. Assumed to be zero if absent.",
+            "example": "10"
+          },
+          "currency": {
+            "type": "string",
+            "description": "The currency for the balance amounts. If absent assumed to be PHP.",
+            "example": "PHP"
+          },
+          "purses": {
+            "type": "string",
+            "description": "Optional array of balances for the account in other currencies. Included to support accounts that support multi-currency purses such as Travel Cards"
+          }
+        }
+      },
+      "requestPaymentInitiation": {
+        "required": [
+          "payeeAccountID",
+          "payeeAccountInstitutionCode",
+          "payeeAccountName",
+          "payerAccountID",
+          "payerAccountInstitutionCode",
+          "payerAccountInstitutionName",
+          "payerAccountName",
+          "paymentAmount",
+          "paymentCurrency",
+          "paymentDate",
+          "paymentPurpose",
+          "paymentReferenceId",
+          "paymentType"
+        ],
+        "type": "object",
+        "properties": {
+          "paymentReferenceId": {
+            "type": "string",
+            "description": "The reference given by the payer when the payment is made"
+          },
+          "paymentType": {
+            "type": "string",
+            "description": "Type of transfer",
+            "example": "INTRABANK",
+            "enum": [
+              "INTRABANK",
+              "INSTAPAY",
+              "PESONET"
+            ]
+          },
+          "paymentPurpose": {
+            "type": "string",
+            "description": "Purpose of the payment."
+          },
+          "paymentAmount": {
+            "type": "string",
+            "description": "Amount to be paid",
+            "example": "705000"
+          },
+          "paymentCurrency": {
+            "type": "string",
+            "description": "The currency for the payment amount.",
+            "example": "PHP"
+          },
+          "paymentDate": {
+            "type": "string",
+            "description": "Date of payment intitation. Must be \"today's\" date",
+            "example": "yyyy/mm/dd"
+          },
+          "payerAccountId": {
+            "type": "string",
+            "description": "Number that identifies the payer account",
+            "example": "nnn-nnnnnn-nn"
+          },
+          "payerAccountName": {
+            "type": "string",
+            "description": "Name of the payer's account",
+            "enum": [
+              "CURRENT ACCOUNT",
+              "SAVINGS ACCOUNT",
+              "LOAN ACCOUNT",
+              "WALLET ACCOUNT"
+            ]
+          },
+          "payerAddress": {
+            "type": "string",
+            "description": "Address of the payer",
+            "example": "Magallanes Dr"
+          },
+          "payerAccountInstitutionCode": {
+            "type": "string",
+            "description": "Code that identifies the payer's bank that holds the account",
+            "example": "UBx"
+          },
+          "payerAccountInstitutionName": {
+            "type": "string",
+            "description": "Name that identifies the payer's bank that holds the account",
+            "example": "Universal Bank"
+          },
+          "payeeAccountId": {
+            "type": "string",
+            "description": "Number that identifies the payee account",
+            "example": "nnn-nnnnnn-nn"
+          },
+          "payeeAccountName": {
+            "type": "string",
+            "description": "Name of the payee's account",
+            "enum": [
+              "CURRENT ACCOUNT",
+              "SAVINGS ACCOUNT",
+              "LOAN ACCOUNT",
+              "WALLET ACCOUNT"
+            ]
+          },
+          "payeeAddress": {
+            "type": "string",
+            "description": "Address of the payee",
+            "example": "Muralla St"
+          },
+          "payeeAccountInstitutionCode": {
+            "type": "string",
+            "description": "Code that identifies the payee's bank that holds the account",
+            "example": "UBx"
+          },
+          "payeeAccountInstitutionName": {
+            "type": "string",
+            "description": "Name that identifies the payee's bank that holds the account",
+            "example": "Universal Bank"
+          }
+        },
+        "description": "Body to initiate a payment"
+      },
+      "bankingTransaction": {
+        "required": [
+          "accountId",
+          "executionDateTime",
+          "isDetailAvailable",
+          "transactionAmount",
+          "transactionId"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "The ID of the account (i.e. the Account Number) that the customer would see on a statement or other documentation",
+            "example": "000-0000-00000-0"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "The transaction reference visible to the customer or requested by the customer. This may be the paymentReferenceID, if available."
+          },
+          "transactionReferenceId": {
+            "type": "string",
+            "description": "The reference for the transaction provided by the originating institution. Empty string if no data provided. This may be the paymentReferenceID, if available."
+          },
+          "executionDateTime": {
+            "type": "string",
+            "description": "The time the transaction was executed by the originating customer, if available",
+            "example": "yyyy/mm/dd , hh:mm:ss"
+          },
+          "transactionAmount": {
+            "type": "number",
+            "description": "The value of the transaction. Negative values mean money was outgoing from the account",
+            "example": 700
+          },
+          "transactionCurrency": {
+            "type": "string",
+            "description": "The currency for the transaction amount. PHP assumed if not present",
+            "example": "PHP"
+          },
+          "isDetailAvailable": {
+            "type": "boolean",
+            "description": "True if extended information is available using the transaction detail end point. False if extended data is not available"
+          }
+        },
+        "description": "Response body to a banking transaction request"
+      },
+      "bankingTransactionDetail": {
+        "required": [
+          "accountId",
+          "executionDateTime",
+          "isDetailAvailable",
+          "transactionAmount",
+          "transactionId",
+          "transactionStatus",
+          "transactionType"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "The ID of the account (i.e. the Account Number) that the customer would see on a statement or other documentation",
+            "example": "000-0000-00000-0"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "The transaction reference visible to the customer or requested by the customer. This may be the paymentReferenceID, if available."
+          },
+          "transactionReferenceId": {
+            "type": "string",
+            "description": "The reference for the transaction provided by the originating institution. Empty string if no data provided. This may be the paymentReferenceID, if available."
+          },
+          "transactionType": {
+            "type": "string",
+            "description": "The type of the transaction"
+          },
+          "transactionStatus": {
+            "type": "string",
+            "description": "Status of the transaction whether pending or posted. Note that there is currently no provision in the standards to guarantee the ability to correlate a pending transaction with an associated posted transaction"
+          },
+          "transactionDescription": {
+            "type": "string",
+            "description": "The transaction description as applied by the financial institution"
+          },
+          "postingDateTime": {
+            "type": "string",
+            "description": "The time the transaction was posted. This field is Mandatory if the transaction has status POSTED. This is the time that appears on a standard statement",
+            "example": "yyyy/mm/dd , hh:mm:ss"
+          },
+          "valueDateTime": {
+            "type": "string",
+            "description": "Date and time at which assets become available to the account owner in case of a credit entry, or cease to be available to the account owner in case of a debit transaction entry",
+            "example": "yyyy/mm/dd , hh:mm:ss"
+          },
+          "executionDateTime": {
+            "type": "string",
+            "description": "The time the transaction was executed by the originating customer, if available",
+            "example": "yyyy/mm/dd , hh:mm:ss"
+          },
+          "transactionAmount": {
+            "type": "number",
+            "description": "The value of the transaction. Negative values mean money was outgoing from the account",
+            "example": 700
+          },
+          "transactionCurrency": {
+            "type": "string",
+            "description": "The currency for the transaction amount. PHP assumed if not present",
+            "example": "PHP"
+          },
+          "beneficiaryName": {
+            "type": "string",
+            "description": "Name of the merchant for an beneficiary of the payment",
+            "example": "John"
+          },
+          "isDetailAvailable": {
+            "type": "boolean",
+            "description": "True if extended information is available using the transaction detail end point. False if extended data is not available"
+          }
+        },
+        "description": "Response body to a banking transaction detail request"
+      },
+      "paymentInitiationSimple": {
+        "required": [
+          "paymentId",
+          "paymentStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "paymentStatus": {
+            "type": "string",
+            "description": "The payment status is filled with codes of the ISO 20022 data table.",
+            "example": "CANC:Cancelled Payment Initiation has been cancelled before execution",
+            "enum": [
+              "RECEIVED",
+              "PENDING",
+              "ACCEPTED",
+              "REJECTED",
+              "CANCELLED"
+            ]
+          },
+          "paymentId": {
+            "type": "string",
+            "description": "Resource identification of the generated payment."
+          },
+          "paymentFees": {
+            "type": "number",
+            "description": "Can be used by the ASPSP to transport payment",
+            "example": 2.4
+          },
+          "paymentFeeIndicator": {
+            "type": "boolean",
+            "description": "If equals true, the payment will involve specific payment cost as shown by the ASPSP in their  public price list or as agreed between ASPSP and  PSU. If equals false, the payment will not involve additional specific payment costs to the PSU. If this data element is not used, there is no  information about payment fees unless the fee  amount is given explicitly in the data element paymentFees.",
+            "example": true
+          }
+        },
+        "description": "Response body to a payment initiation"
+      },
+      "paymentStatus": {
+        "required": [
+          "paymentStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "paymentStatus": {
+            "type": "string",
+            "description": "Retrieves the status of a payment. Example, the payment status 'CNCL' means 'Payment is Cancelled'.",
+            "example": "ACTC",
+            "enum": [
+              "ACTC",
+              "RCVD",
+              "PART",
+              "RJCT",
+              "PDNG",
+              "ACCP",
+              "ACSP",
+              "ACSC",
+              "ACPT",
+              "ACCR",
+              "RJCR",
+              "ACWC",
+              "PACR",
+              "PDCR",
+              "ACCC",
+              "CNCL"
+            ]
+          },
+          "fundsAvailable": {
+            "type": "boolean",
+            "description": "This data element is contained, if supported by the ASPSP, if a funds check has been performed and if the paymentStatus is \"ACCEPTED\", \"PENDING\" or \"RECEIVED\"."
+          }
+        },
+        "description": "Body of a payment status response"
+      },
+      "requestAuthorisationCode": {
+        "required": [
+          "clientId",
+          "responseType",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "responseType": {
+            "type": "string",
+            "description": "Indicates that a code is requested"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "The identification number software client from the setup process"
+          },
+          "redirectUri": {
+            "type": "string",
+            "description": "The URI to return to after the authorization is complete. A copy of this is stored in the directory"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Values indicating what data is to be accessed"
+          },
+          "state": {
+            "type": "string",
+            "description": "A random string generated by the Data User application"
+          }
+        },
+        "description": "Body of an authorisation code request"
+      },
+      "requestAuthorisationToken": {
+        "required": [
+          "clientId",
+          "code",
+          "grantType"
+        ],
+        "type": "object",
+        "properties": {
+          "grantType": {
+            "type": "string",
+            "description": "The authorisation code"
+          },
+          "code": {
+            "type": "string",
+            "description": "The authorization code received from the authorization server."
+          },
+          "redirectUri": {
+            "type": "string",
+            "description": "Required if the redirect_uri parameter was used in the request. The value must be the same."
+          },
+          "clientId": {
+            "type": "string",
+            "description": "The identification number software client from the setup process."
+          },
+          "clientSecret": {
+            "type": "string",
+            "description": "The client secret.  The client MAY omit the parameter if the client secret is an empty string."
+          }
+        }
+      },
+      "requestAuthorisationTokenRevoke": {
+        "required": [
+          "accessToken"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "The access token issued by the authorization server"
+          },
+          "tokenTypeHint": {
+            "type": "string",
+            "description": "A hint about the type of the token submitted for revocation. Clients MAY pass this parameter in order to help the authorization server to optimize the token lookup. If the server is unable to locate the token using the given hint, it MUST extend its search across all of its supported token types. An authorization server MAY ignore this parameter, particularly if it is able to detect the token type automatically. This specification defines two such values:accessToken and refreshToken."
+          }
+        }
+      },
+      "bankingCreateCustomer": {
+        "required": [
+          "adress1",
+          "birthDate",
+          "birthPlace",
+          "birthPlaceCountry",
+          "city",
+          "civilStatus",
+          "country",
+          "customerRiskLevel",
+          "email",
+          "firstName",
+          "gender",
+          "idCardNumber",
+          "incomeType",
+          "lastName",
+          "middleName",
+          "monthlyExpenses",
+          "monthlyIncome",
+          "motherMaidenName",
+          "postalCode",
+          "province",
+          "religion",
+          "sss",
+          "state",
+          "tin",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "Applicant first name",
+            "example": "Mary"
+          },
+          "middleName": {
+            "type": "string",
+            "description": "Applicant middle name",
+            "example": "Pineda"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Applicant last name",
+            "example": "Cruz"
+          },
+          "title": {
+            "type": "string",
+            "description": "Applicant title.",
+            "enum": [
+              "MR",
+              "MRS",
+              "MS",
+              "PROFESSOR",
+              "DOCTOR"
+            ]
+          },
+          "gender": {
+            "type": "string",
+            "description": "Applicant gender",
+            "enum": [
+              "MALE",
+              "FEMALE"
+            ]
+          },
+          "civilStatus": {
+            "type": "string",
+            "description": "Applicant civil status",
+            "enum": [
+              "SINGLE",
+              "WIDOWER",
+              "FREE UNION",
+              "MARRIED",
+              "DIVORCED"
+            ]
+          },
+          "religion": {
+            "type": "string",
+            "description": "Applicant religion.",
+            "enum": [
+              "CATHOLIC",
+              "CHRISTIAN",
+              "CONFUCIUS",
+              "BUDDHA",
+              "HINDU",
+              "ISLAM",
+              "OTHER"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "description": "Email is an active applicant���s email address"
+          },
+          "motherMaidenName": {
+            "type": "string",
+            "description": "motherMaidenName is applicant���s mother maiden name",
+            "example": "Gonzalez"
+          },
+          "address1": {
+            "type": "string",
+            "description": "Address of the applicant",
+            "example": "Quintin Paredes Rd"
+          },
+          "address2": {
+            "type": "string",
+            "description": "Second address of the applicant",
+            "example": "Padre Burgos St"
+          },
+          "city": {
+            "type": "string",
+            "description": "Name of the city or locality",
+            "example": "Manila"
+          },
+          "country": {
+            "type": "string",
+            "description": "A valid��ISO 3166 Alpha-3��country code. Philippines (PHL) is assumed if country is not present."
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "A valid postal code of the correspondent address"
+          },
+          "province": {
+            "type": "string",
+            "description": "A valid ISO 3166-2 province code.",
+            "example": "PH-ABR",
+            "enum": [
+              "PH-ABR",
+              "PH-AGN",
+              "PH-AGS",
+              "PH-AKL",
+              "PH-ALB",
+              "PH-ANT",
+              "PH-APA",
+              "PH-AUR",
+              "PH-BAS",
+              "PH-BAN",
+              "PH-BTN",
+              "PH-BTG",
+              "PH-BEN",
+              "PH-BIL",
+              "PH-BOH",
+              "PH-BUK",
+              "PH-BUL",
+              "PH-CAG",
+              "PH-CAN",
+              "PH-CAS",
+              "PH-CAM",
+              "PH-CAP",
+              "PH-CAT",
+              "PH-CAV",
+              "PH-CEB",
+              "PH-NCO",
+              "PH-COM",
+              "PH-DAV",
+              "PH-DAS",
+              "PH-DVO",
+              "PH-DAO",
+              "PH-DIN",
+              "PH-EAS",
+              "PH-GUI",
+              "PH-IFU",
+              "PH-ILN",
+              "PH-ILS",
+              "PH-ILI",
+              "PH-ISA",
+              "PH-KAL",
+              "PH-LUN",
+              "PH-LAG",
+              "PH-LAN",
+              "PH-LAS",
+              "PH-LEY",
+              "PH-MDN",
+              "PH-MDS",
+              "PH-MAD",
+              "PH-MAS",
+              "PH-MSC",
+              "PH-MSR",
+              "PH-MOU",
+              "PH-NEC",
+              "PH-NER",
+              "PH-NSA",
+              "PH-NUE",
+              "PH-NUV",
+              "PH-MDC",
+              "PH-MDR",
+              "PH-PLW",
+              "PH-PAM",
+              "PH-PAN",
+              "PH-QUE",
+              "PH-QUI",
+              "PH-RIZ",
+              "PH-ROM",
+              "PH-WSA",
+              "PH-SAR",
+              "PH-SIG",
+              "PH-SOR",
+              "PH-SCO",
+              "PH-SLE",
+              "PH-SUK",
+              "PH-SLU",
+              "PH-SUN",
+              "PH-SUR",
+              "PH-TAR",
+              "PH-TAW",
+              "PH-ZMB",
+              "PH-ZAN",
+              "PH-ZAS",
+              "PH-ZSI",
+              "PH-00"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "description": "A valid ISO 3166-2 region code.",
+            "example": "PH-14",
+            "enum": [
+              "PH-14",
+              "PH-05",
+              "PH-02",
+              "PH-40",
+              "PH-13",
+              "PH-03",
+              "PH-07",
+              "PH-15",
+              "PH-11",
+              "PH-08",
+              "PH-01",
+              "PH-41",
+              "PH-00",
+              "PH-10",
+              "PH-12",
+              "PH-06",
+              "PH-09"
+            ]
+          },
+          "mobilePhoneNumber": {
+            "type": "string",
+            "description": "Applicant mobile phone number",
+            "example": "8123-4567"
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "If absent, assumed to be Philippines (+63). The + should be included"
+          },
+          "telephoneNumber": {
+            "type": "string",
+            "description": "Applicant telephone number. Only filled if the Applicant does not provide a mobile phone number"
+          },
+          "birthDate": {
+            "type": "string",
+            "description": "Applicant birth date",
+            "example": "yyyy/mm/dd"
+          },
+          "birthPlace": {
+            "type": "string",
+            "description": "birthPlace is the city place applicant was born"
+          },
+          "birthPlaceCountry": {
+            "type": "string",
+            "description": "Applicant country of birth"
+          },
+          "monthlyIncome": {
+            "type": "string",
+            "description": "Applicant monthly income",
+            "example": "MORE_THAN_100M_TO_500M",
+            "enum": [
+              "UP_TO_1M",
+              "MORE_THAN_1M_TO_5M",
+              "MORE_THAN_5M_TO_10M",
+              "MORE_THAN_10M_TO_25M",
+              "MORE_THAN_25M_TO_50M",
+              "MORE_THAN_50M_TO_100M",
+              "MORE_THAN_100M_TO_500M",
+              "MORE_THAN_500M_TO_1B",
+              "MORE_THAN_1B"
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "The currency for the monthly income amount. If absent assumed to be PHP"
+          },
+          "incomeType": {
+            "type": "string",
+            "description": "Where does the income comes from.",
+            "example": "ALLOWANCE",
+            "enum": [
+              "INCOME",
+              "INHERITANCE",
+              "GRANT",
+              "LOTTERY",
+              "SAVINGS",
+              "ALLOWANCE",
+              "REMITTANCE",
+              "PENSION",
+              "OTHER_SOURCE"
+            ]
+          },
+          "monthlyExpenses": {
+            "type": "string",
+            "description": "Applicant total monthly expenses",
+            "example": "MORE_THAN_100M_TO_500M",
+            "enum": [
+              "UP_TO_1M",
+              "MORE_THAN_1M_TO_5M",
+              "MORE_THAN_5M_TO_10M",
+              "MORE_THAN_10M_TO_25M",
+              "MORE_THAN_25M_TO_50M",
+              "MORE_THAN_50M_TO_100M",
+              "MORE_THAN_100M_TO_500M",
+              "MORE_THAN_500M_TO_1B",
+              "MORE_THAN_1B"
+            ]
+          },
+          "tin": {
+            "type": "string",
+            "description": "Tax identification number of the Philippines",
+            "example": "000-123-456-001"
+          },
+          "sss": {
+            "type": "string",
+            "description": "Number of the Applicant in the Social Security System",
+            "example": "01-4567892-1"
+          },
+          "idCardNumber": {
+            "type": "string",
+            "description": "IDCardNumber is the applicant���s government ID number For Indonesia, it is the 16-digit KTP ID number"
+          },
+          "customerRiskLevel": {
+            "type": "string",
+            "description": "Risk assessment of the Applicant"
+          }
+        },
+        "description": "Body to initiate a create customer request"
+      },
+      "bankingCreateCustomerResponse": {
+        "required": [
+          "customerId"
+        ],
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "Identification code of the applicant"
+          }
+        },
+        "description": "Body of a Create Customer Response"
+      },
+      "bankingProductSubscribe": {
+        "type": "object",
+        "properties": {
+          "bankCode": {
+            "type": "string",
+            "description": "BankCode is the selected bank���s code"
+          },
+          "clientConsent": {
+            "type": "boolean",
+            "description": "clientConsent records if the client allows their customer data to be forwarded."
+          },
+          "customerId": {
+            "type": "string",
+            "description": "Identification code of the applicant"
+          },
+          "returnUrl": {
+            "type": "string",
+            "description": "ReturnURL is the return path for the app redirection after the account opening has been accomplished"
+          },
+          "failUrl": {
+            "type": "string",
+            "description": "FailURL is the return path for the app redirection after the account opening failed"
+          },
+          "thirdPartyId": {
+            "type": "string",
+            "description": "thirdPartyId refers to the organization id which is integrated with the client"
+          },
+          "thirdPartyName": {
+            "type": "string",
+            "description": "thirdPartyName refers to the organization name which is integrated with the client"
+          }
+        },
+        "description": "Body to request a product subscription"
+      },
+      "bankingProductSubscribeResponse": {
+        "required": [
+          "applicationId",
+          "redirectUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "applicationId": {
+            "type": "string",
+            "description": "applicationId shows the reference number to the application"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "description": "redirectURL to Tap or Bank���s web view"
+          }
+        }
+      },
+      "bankingKYCUpload": {
+        "required": [
+          "customerId",
+          "documentName",
+          "documentType",
+          "expirationDate",
+          "file",
+          "idNumber",
+          "idStatus",
+          "idType",
+          "issuer",
+          "primaryId",
+          "receivedDate"
+        ],
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "Identification code of the Applicant"
+          },
+          "documentName": {
+            "type": "string",
+            "description": "Name of the identification document submitted"
+          },
+          "documentType": {
+            "type": "string",
+            "description": "Type of document submitted",
+            "example": "sss number"
+          },
+          "idType": {
+            "type": "string",
+            "description": "Type of ID submitted"
+          },
+          "idNumber": {
+            "type": "string",
+            "description": "Number of ID submitted"
+          },
+          "idStatus": {
+            "type": "boolean",
+            "description": "True if the ID submitted is \"VALID\". False otherwise"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Entity responsible for issuing the ID"
+          },
+          "country": {
+            "type": "string",
+            "description": "A valid��ISO 3166 Alpha-3��country code. Philippines (PHL) is assumed if country is not present."
+          },
+          "primaryId": {
+            "type": "boolean",
+            "description": "True if the ID submitted is \"PRIMARY\". False otherwise"
+          },
+          "file": {
+            "type": "string",
+            "description": "Code of the correspondent file"
+          },
+          "expirationDate": {
+            "type": "string",
+            "description": "Legal ID expiration date",
+            "example": "yyyy/mm/dd"
+          },
+          "receivedDate": {
+            "type": "string",
+            "description": "Legal ID received date",
+            "example": "yyyy/mm/dd"
+          }
+        }
+      },
+      "paymentStatusDefinitions": {
+        "type": "object",
+        "properties": {
+          "ACTC": {
+            "type": "string",
+            "description": "Accepted Technical Validation - Authentication and syntactical and semantical validation are successful."
+          },
+          "RCVD": {
+            "type": "string",
+            "description": "Received - Payment initiation has been received by the receiving agent."
+          },
+          "PART": {
+            "type": "string",
+            "description": "Partially Accepted - A number of transactions have been accepted, whereas another number of transactions have not yet achieved 'accepted' status."
+          },
+          "RJCT": {
+            "type": "string",
+            "description": "Rejected - Payment initiation or individual transaction included in the payment initiation has been rejected."
+          },
+          "PDNG": {
+            "type": "string",
+            "description": "Pending - Payment initiation or individual transaction included in the payment initiation is pending.  Further checks and status update will be performed."
+          },
+          "ACCP": {
+            "type": "string",
+            "description": "Accepted Customer Profile - Preceding check of technical validation was successful. Customer profile check was also successful."
+          },
+          "ACSP": {
+            "type": "string",
+            "description": "Accepted Settlement in Process - All preceding checks such as technical validation and customer profile were successful and therefore the payment initiation has been accepted for execution."
+          },
+          "ACSC": {
+            "type": "string",
+            "description": "Accepted Settlement Completed - Settlement on the debtor's account has been completed."
+          },
+          "ACPT": {
+            "type": "string",
+            "description": "Accepted - Request is accepted."
+          },
+          "ACCR": {
+            "type": "string",
+            "description": "Accepted Cancellation Request - Cancellation is accepted."
+          },
+          "RJCR": {
+            "type": "string",
+            "description": "Rejected Cancellation Request - Cancellation request is rejected"
+          },
+          "ACWC": {
+            "type": "string",
+            "description": "Accepted With Change - Instruction is accepted but a change will be made, such as date or remittance not sent."
+          },
+          "PACR": {
+            "type": "string",
+            "description": "Partially Accepted Cancellation Request - Cancellation is partially accepted."
+          },
+          "PDCR": {
+            "type": "string",
+            "description": "Pending Cancellation Request - Cancellation request is pending."
+          },
+          "ACCC": {
+            "type": "string",
+            "description": "Accepted Credit Settlement Completed - Settlement on the creditor's account has been completed."
+          },
+          "CNCL": {
+            "type": "string",
+            "description": "Payment Cancelled - Payment is cancelled."
+          }
+        }
+      },
+      "authorisationCode": {
+        "type": "object",
+        "properties": {
+          "responseType": {
+            "type": "string",
+            "description": "Indicates that a code is requested"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "The identification number software client from the setup process"
+          },
+          "redirectUri": {
+            "type": "string",
+            "description": "The URI to return to after the authorization is complete. A copy of this is stored in the directory"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Values indicating what data is to be accessed"
+          },
+          "state": {
+            "type": "string",
+            "description": "A random string generated by the Data User application"
+          }
+        }
+      },
+      "authorisationCodeResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The authorisation code"
+          },
+          "state": {
+            "type": "string",
+            "description": "The same string generated by the Data User application"
+          }
+        }
+      },
+      "authorisationToken": {
+        "required": [
+          "clientId",
+          "code",
+          "grantType"
+        ],
+        "type": "object",
+        "properties": {
+          "grantType": {
+            "type": "string",
+            "description": "The authorisation code"
+          },
+          "code": {
+            "type": "string",
+            "description": "The authorization code received from the authorization server."
+          },
+          "redirectUri": {
+            "type": "string",
+            "description": "Required if the redirect_uri parameter was used in the request. The value must be the same."
+          },
+          "clientId": {
+            "type": "string",
+            "description": "The identification number software client from the setup process."
+          },
+          "clientSecret": {
+            "type": "string",
+            "description": "The client secret.  The client MAY omit the parameter if the client secret is an empty string."
+          }
+        }
+      },
+      "authorisationTokenResponse": {
+        "required": [
+          "accessToken",
+          "tokenType"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "The access token issued by the authorization server"
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "The access token type provides the client with the information required to successfully utilize the access token to make a protected resource request"
+          },
+          "expiresIn": {
+            "type": "string",
+            "description": "The lifetime in seconds of the access token. For example, the value \"3600\" denotes that the access token will expire in one hour from the time the response was generated."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Credential used to obtain access token. Used to obtain a new token after the previous one expires or becomes invalid"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Required, if not identical to the scope required by the client. Values indicating what data is to be accessed."
+          }
+        }
+      },
+      "authorisationTokenRevoke": {
+        "required": [
+          "accessToken"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "The access token issued by the authorization server"
+          },
+          "tokenTypeHint": {
+            "type": "string",
+            "description": "A hint about the type of the token submitted for revocation. Clients MAY pass this parameter in order to help the authorization server to optimize the token lookup. If the server is unable to locate the token using the given hint, it MUST extend its search across all of its supported token types. An authorization server MAY ignore this parameter, particularly if it is able to detect the token type automatically. This specification defines two such values:accessToken and refreshToken."
+          }
+        }
+      },
+      "responseErrorList": {
+        "required": [
+          "errors"
+        ],
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/errors"
+            }
+          }
+        }
+      },
+      "linksPaginated": {
+        "required": [
+          "self"
+        ],
+        "type": "object",
+        "properties": {
+          "first": {
+            "type": "string",
+            "description": "URI to the first page of this set. Mandatory if this response is not the first page"
+          },
+          "prev": {
+            "type": "string",
+            "description": "URI to the previous page of this set. Mandatory if this response is not the first page"
+          },
+          "next": {
+            "type": "string",
+            "description": "URI to the next page of this set. Mandatory if this response is not the last page"
+          },
+          "last": {
+            "type": "string",
+            "description": "URI to the last page of this set. Mandatory if this response is not the last page"
+          }
+        },
+        "example": {
+          "next": "next",
+          "last": "last",
+          "prev": "prev",
+          "first": "first"
+        }
+      },
+      "MetaPaginated": {
+        "required": [
+          "totalPages",
+          "totalRecords"
+        ],
+        "type": "object",
+        "properties": {
+          "totalRecords": {
+            "type": "integer",
+            "description": "The total number of records in the full set"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "The total number of pages in the full set"
+          }
+        },
+        "example": {
+          "totalRecords": 0,
+          "totalPages": 6
+        }
+      },
+      "metaError": {
+        "type": "object",
+        "properties": {
+          "urn": {
+            "type": "string",
+            "description": "The CDR error code URN which the application-specific error code extends. Mandatory if the error `code` is an application-specific error rather than a standardised error code."
+          }
+        },
+        "description": "Additional data for customised error codes"
+      },
+      "errors": {
+        "required": [
+          "code",
+          "detail",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The code of the error encountered. Where the error is specific to the respondent, an application-specific error code, expressed as a string value. If the error is application-specific, the URN code that the specific error extends must be provided in the meta object. Otherwise, the value is the error code URN."
+          },
+          "title": {
+            "type": "string",
+            "description": "A short, human-readable summary of the problem that MUST NOT change from occurrence to occurrence of the problem represented by the error code."
+          },
+          "detail": {
+            "type": "string",
+            "description": "A human-readable explanation specific to this occurrence of the problem."
+          },
+          "meta": {
+            "$ref": "#/components/schemas/metaError"
+          }
+        }
+      },
+      "HTTPheader": {
+        "required": [
+          "participantIdentificationNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "participantIdentificationNumber": {
+            "type": "string",
+            "description": "a unique identifier issued by the Pilot Administrator"
+          }
+        }
+      }
+    },
+    "responses": {},
+    "parameters": {
+      "authorization": {
+        "name": "authorization",
+        "in": "header",
+        "description": "The jwt token received from OpenBanking consent Management API",
+        "required": true,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "type": "string",
+          "description": ""
+        },
+        "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJSZXNvdXJjZW93bmVyIjoiQ3VzdG9tZXIiLCJTdGF0dXMiOiJhcHByb3ZlZCIsInN1YiI6InN1YmplY3Qtc3ViamVjdCIsImF1ZCI6WyJhdWRpZW5jZTEiLCJhdWRpZW5jZTIiXSwiQ3VzdGlkIjoiMTIzNCIsInNjb3BlIjoiYmFua2luZzphY2NvdW50cy5iYXNpYy5yZWFkIiwiaXNzIjoidXJuOlwvXC9hcGlnZWUtZWRnZS1KV1QtcG9saWN5LXRlc3QiLCJSZXNvdXJjZXNlcnZlciI6IkJhbmsiLCJEdXJhdGlvbiI6IjM1OTkiLCJleHAiOjE2OTk1OTA1MzAsImlhdCI6MTY5OTU5MDQ3MCwianRpIjoiZTdhYTkxZWYtMjBjMy00MjliLTkyZWMtN2VmYWRmZWRmMWM0In0.u5VreI1_8p3t7tjkRdCD5kqqxsGMW-Eo5Qv1apdGTAw"
+      },
+      "openStatus_query": {
+        "name": "openStatus",
+        "in": "query",
+        "description": "Used to filter results according to open/closed status. Values can be OPEN, CLOSED or ALL. If absent then ALL is assumed.",
+        "required": false,
+        "style": "FORM",
+        "explode": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "ALL",
+            "CLOSED",
+            "OPEN"
+          ],
+          "default": "ALL"
+        }
+      },
+      "accountType_query": {
+        "name": "accountType",
+        "in": "query",
+        "description": "Used to filter results on the accountType field applicable to accounts. Any one of the valid values for this field can be supplied. If absent then all accounts returned.)",
+        "required": false,
+        "style": "FORM",
+        "explode": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "SAVINGS ACCOUNT",
+            "CURRENT ACCOUNT",
+            "WALLET ACCOUNT",
+            "LOAN ACCOUNT"
+          ]
+        }
+      },
+      "isOwned_query": {
+        "name": "isOwned",
+        "in": "query",
+        "description": "Filters accounts based on whether they are owned by the authorised customer. True for owned accounts, false for unowned accounts and absent for all accounts",
+        "required": false,
+        "style": "FORM",
+        "explode": true,
+        "schema": {
+          "type": "boolean"
+        }
+      },
+      "x-v_header": {
+        "name": "x-v",
+        "in": "header",
+        "description": "Version of the API endpoint requested by the client. Must be set to a positive integer. If the version requested is not supported, then the holder must respond with a 406 Not Acceptable",
+        "required": true,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "participantId_header": {
+        "name": "participantId",
+        "in": "header",
+        "description": "A unique identifier issued by the Pilot Administrator.",
+        "required": true,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "accept_header": {
+        "name": "accept",
+        "in": "header",
+        "description": "If specified, the media type must be set to application/json, unless otherwise specified in the resource endpoint standard. If set to an unacceptable value the holder must respond with a 406 Not Acceptable. If not specified, or a wildcard (*/*) is provided, the default media type is application/json.",
+        "required": false,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Authorization_header": {
+        "name": "Authorization",
+        "in": "header",
+        "required": true,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "type": "string",
+          "description": ""
+        },
+        "example": "Basic dEVPVzd2UDFxUk9yUHZHUm5YaHBZbEFGZ1NFY0lYSXY6TVJMSlpBWXRnV0JScjVWQ3M0V2ViUm5zajZVWFFmNHY="
+      },
+      "accountId_path": {
+        "name": "accountId",
+        "in": "path",
+        "description": "ID of the specific account requested",
+        "required": true,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "oldestDateTime_query": {
+        "name": "oldestDateTime",
+        "in": "query",
+        "description": "Constrain the transaction history request to transactions with effective time at or after this date/time. If absent defaults to newestTime minus 90 days. Format is aligned to string common type.",
+        "required": false,
+        "style": "FORM",
+        "explode": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "newestDateTime_query": {
+        "name": "newestDateTime",
+        "in": "query",
+        "description": "Constrain the transaction history request to transactions with effective time at or before this date/time. If absent defaults to newestTime minus 90 days. Format is aligned to string common type.",
+        "required": false,
+        "style": "FORM",
+        "explode": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "minAmount_query": {
+        "name": "minAmount",
+        "in": "query",
+        "description": "Filter transactions to only transactions with amounts higher or equal to than this amount.",
+        "required": false,
+        "style": "FORM",
+        "explode": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "maxAmount_query": {
+        "name": "maxAmount",
+        "in": "query",
+        "description": "Filter transactions to only transactions with amounts less than or equal to than this amount.",
+        "required": false,
+        "style": "FORM",
+        "explode": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "transactionId_path": {
+        "name": "transactionId",
+        "in": "path",
+        "description": "ID of the specific transaction requested",
+        "required": true,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "headers": {
+      "myHeader": {
+        "description": "asrtqhiw",
+        "required": true,
+        "deprecated": false,
+        "style": "SIMPLE",
+        "explode": false,
+        "schema": {
+          "maxLength": 0,
+          "minLength": 0,
+          "type": "string",
+          "description": "qwe",
+          "format": "binary",
+          "example": "TVRBPQ==",
+          "enum": [
+            ""
+          ],
+          "default": "[B@21a46eb2"
+        },
+        "example": ""
+      }
+    },
+    "securitySchemes": {
+      "oauth2": {
+        "type": "OAUTH2",
+        "description": "Transactions are authenticated using OAuth 2.0 strong customer authentication.\n\nThe Registration, Authorization and Token endpoints are available via your scheme's Open Banking Hub Register and Register API.\n",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://devapi.tonikbank.com/v1/security/oauth-token",
+            "scopes": {
+              "grant_type": "client_credentials"
+            }
+          }
+        }
+      }
+    }
+  }
+}
