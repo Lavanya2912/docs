@@ -1,0 +1,401 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Mobile Subscriber API",
+    "description": "API for managing telecommunications services including customer accounts, usage, and plans.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Telecom Support",
+      "email": "support@telecomapi.com",
+      "url": "https://telecomapi.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.telecomservice.com/v1/mobile-subscriber",
+      "description": "Main production server",
+      "x-name": "Server1"
+    }
+  ],
+  "paths": {
+    "/customers": {
+      "get": {
+        "summary": "Retrieve a list of customers",
+        "operationId": "getCustomers",
+        "responses": {
+          "200": {
+            "description": "A list of customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Customer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Retrieve a list of customers"
+      },
+      "post": {
+        "summary": "Create a new customer",
+        "operationId": "createCustomer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Customer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Customer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          }
+        },
+        "description": "Create a new customer"
+      }
+    },
+    "/customers/{customerId}": {
+      "get": {
+        "summary": "Get details of a specific customer",
+        "operationId": "getCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the customer",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A customer object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        },
+        "description": "Get details of a specific customer"
+      },
+      "put": {
+        "summary": "Update customer details",
+        "operationId": "updateCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the customer",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Customer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        },
+        "description": "Update customer details"
+      }
+    },
+    "/accounts/{customerId}/balance": {
+      "get": {
+        "summary": "Get account balance of a customer",
+        "operationId": "getAccountBalance",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the customer",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account balance information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Balance"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        },
+        "description": "Get account balance of a customer"
+      }
+    },
+    "/usage/{customerId}": {
+      "get": {
+        "summary": "Retrieve usage data for a customer",
+        "operationId": "getUsageData",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the customer",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage data of the customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        },
+        "description": "Retrieve usage data for a customer"
+      }
+    },
+    "/plans": {
+      "get": {
+        "summary": "List all available telecom plans",
+        "operationId": "getPlans",
+        "responses": {
+          "200": {
+            "description": "List of available telecom plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Plan"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "List all available telecom plans"
+      }
+    },
+    "/plans/{planId}": {
+      "get": {
+        "summary": "Get details of a specific telecom plan",
+        "operationId": "getPlan",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the telecom plan",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Telecom plan details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Plan not found"
+          }
+        },
+        "description": "Get details of a specific telecom plan"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the customer"
+          },
+          "name": {
+            "type": "string",
+            "description": "Full name of the customer"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email address of the customer"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Phone number of the customer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "description": "The status of the customer account"
+          }
+        }
+      },
+      "Balance": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "Unique ID of the customer"
+          },
+          "balance": {
+            "type": "number",
+            "format": "float",
+            "description": "Current account balance"
+          },
+          "currency": {
+            "type": "string",
+            "description": "The currency of the balance"
+          }
+        }
+      },
+      "UsageData": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "Unique ID of the customer"
+          },
+          "dataUsage": {
+            "type": "number",
+            "description": "Data usage in GB"
+          },
+          "callMinutes": {
+            "type": "number",
+            "description": "Call minutes used"
+          },
+          "smsCount": {
+            "type": "number",
+            "description": "SMS count used"
+          }
+        }
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the telecom plan"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the telecom plan"
+          },
+          "dataAllowance": {
+            "type": "number",
+            "description": "Data allowance in GB"
+          },
+          "voiceAllowance": {
+            "type": "number",
+            "description": "Voice minutes allowance"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price of the plan in USD"
+          },
+          "validity": {
+            "type": "string",
+            "description": "Validity period of the plan (e.g., \"30 days\")"
+          }
+        }
+      }
+    }
+  },
+  "tags": [],
+  "security": [],
+  "x-mock": true,
+  "x-metadata": {
+    "metadata": {
+      "swaggerName": "dba1896d9ad14f08a56093e951ef28d3",
+      "revision": 1,
+      "documentation": [],
+      "category": [
+        {
+          "name": "Unsorted",
+          "paths": [
+            "/customers",
+            "/customers/{customerId}",
+            "/accounts/{customerId}/balance",
+            "/usage/{customerId}",
+            "/plans",
+            "/plans/{planId}"
+          ]
+        }
+      ]
+    }
+  }
+}
