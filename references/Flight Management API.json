@@ -1,0 +1,446 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Flight Management API",
+    "description": "API for managing aviation-related services such as flight information, bookings, and passenger management.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Aviation Support",
+      "email": "support@aviationapi.com",
+      "url": "https://aviationapi.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.aviationplatform.com/v1/flight-management",
+      "description": "Main production server",
+      "x-name": "Server1"
+    }
+  ],
+  "paths": {
+    "/flights": {
+      "get": {
+        "summary": "Retrieve a list of available flights",
+        "operationId": "getFlights",
+        "parameters": [
+          {
+            "name": "departure",
+            "in": "query",
+            "required": true,
+            "description": "The departure airport code (e.g., \"JFK\")",
+            "schema": {
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "description": "The destination airport code (e.g., \"LAX\")",
+            "schema": {
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "description": "The date of the flight (e.g., \"2024-12-01\")",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "style": "form"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of available flights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Flight"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          }
+        },
+        "description": "Retrieve a list of available flights"
+      },
+      "post": {
+        "summary": "Book a flight",
+        "operationId": "bookFlight",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Booking"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Flight booking created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid booking data"
+          }
+        },
+        "description": "Book a flight"
+      }
+    },
+    "/flights/{flightId}": {
+      "get": {
+        "summary": "Get detailed information about a specific flight",
+        "operationId": "getFlightDetails",
+        "parameters": [
+          {
+            "name": "flightId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the flight",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed flight information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Flight"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flight not found"
+          }
+        },
+        "description": "Get detailed information about a specific flight"
+      }
+    },
+    "/bookings/{bookingId}": {
+      "get": {
+        "summary": "Retrieve booking details",
+        "operationId": "getBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the booking",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking not found"
+          }
+        },
+        "description": "Retrieve booking details"
+      },
+      "put": {
+        "summary": "Update booking details",
+        "operationId": "updateBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the booking",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid booking data"
+          },
+          "404": {
+            "description": "Booking not found"
+          }
+        },
+        "description": "Update booking details"
+      }
+    },
+    "/passengers/{passengerId}": {
+      "get": {
+        "summary": "Retrieve passenger details",
+        "operationId": "getPassenger",
+        "parameters": [
+          {
+            "name": "passengerId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the passenger",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Passenger details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Passenger"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Passenger not found"
+          }
+        },
+        "description": "Retrieve passenger details"
+      }
+    },
+    "/airports": {
+      "get": {
+        "summary": "Retrieve a list of all airports",
+        "operationId": "getAirports",
+        "responses": {
+          "200": {
+            "description": "A list of airports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Airport"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Retrieve a list of all airports"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Flight": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the flight"
+          },
+          "airline": {
+            "type": "string",
+            "description": "The airline operating the flight"
+          },
+          "departureAirport": {
+            "type": "string",
+            "description": "The departure airport code (e.g., \"JFK\")"
+          },
+          "destinationAirport": {
+            "type": "string",
+            "description": "The destination airport code (e.g., \"LAX\")"
+          },
+          "departureTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled departure time of the flight"
+          },
+          "arrivalTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled arrival time of the flight"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "Price of the flight ticket"
+          },
+          "availableSeats": {
+            "type": "integer",
+            "description": "Number of available seats on the flight"
+          }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the booking"
+          },
+          "flightId": {
+            "type": "string",
+            "description": "The ID of the booked flight"
+          },
+          "passengerId": {
+            "type": "string",
+            "description": "The ID of the passenger"
+          },
+          "bookingDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date and time when the booking was made"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "pending",
+              "cancelled"
+            ],
+            "description": "Current status of the booking"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "Total cost of the booking"
+          }
+        }
+      },
+      "BookingUpdate": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "pending",
+              "cancelled"
+            ],
+            "description": "New status of the booking"
+          }
+        }
+      },
+      "Passenger": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the passenger"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the passenger"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Last name of the passenger"
+          },
+          "dob": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of birth of the passenger"
+          },
+          "passportNumber": {
+            "type": "string",
+            "description": "Passport number of the passenger"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Nationality of the passenger"
+          }
+        }
+      },
+      "Airport": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The airport code (e.g., \"JFK\")"
+          },
+          "name": {
+            "type": "string",
+            "description": "Full name of the airport"
+          },
+          "city": {
+            "type": "string",
+            "description": "The city where the airport is located"
+          },
+          "country": {
+            "type": "string",
+            "description": "The country where the airport is located"
+          }
+        }
+      }
+    }
+  },
+  "tags": [],
+  "security": [],
+  "x-mock": true,
+  "x-metadata": {
+    "metadata": {
+      "swaggerName": "070dd70341c1424db5c5766d59450c8f",
+      "revision": 1,
+      "documentation": [],
+      "category": [
+        {
+          "name": "Unsorted",
+          "paths": [
+            "/flights",
+            "/flights/{flightId}",
+            "/bookings/{bookingId}",
+            "/passengers/{passengerId}",
+            "/airports"
+          ]
+        }
+      ]
+    }
+  }
+}
