@@ -1,0 +1,213 @@
+openapi: 3.0.3
+info:
+  title: Extended Sample API
+  description: An API example with at least 5 paths to demonstrate Swagger (OpenAPI) YAML.
+  version: "1.0.0"
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+paths:
+  /pets:
+    get:
+      summary: List all pets
+      operationId: listPets
+      tags: [pets]
+      responses:
+        "200":
+          description: A JSON array of pet objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pets"
+    post:
+      summary: Create a pet
+      operationId: createPet
+      tags: [pets]
+      requestBody:
+        description: Pet to add
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPet"
+      responses:
+        "201":
+          description: Pet created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get a pet by ID
+      operationId: getPetById
+      tags: [pets]
+      responses:
+        "200":
+          description: Pet details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "404":
+          description: Not found
+    delete:
+      summary: Delete a pet
+      operationId: deletePet
+      tags: [pets]
+      responses:
+        "204":
+          description: Deleted
+  /owners:
+    get:
+      summary: List all owners
+      operationId: listOwners
+      tags: [owners]
+      responses:
+        "200":
+          description: A list of owners
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Owners"
+    post:
+      summary: Create an owner
+      operationId: createOwner
+      tags: [owners]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewOwner"
+      responses:
+        "201":
+          description: Owner created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Owner"
+  /owners/{ownerId}:
+    parameters:
+      - name: ownerId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get owner by ID
+      operationId: getOwnerById
+      tags: [owners]
+      responses:
+        "200":
+          description: Owner details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Owner"
+        "404":
+          description: Owner not found
+  /appointments:
+    get:
+      summary: List appointments
+      operationId: listAppointments
+      tags: [appointments]
+      responses:
+        "200":
+          description: A list of appointments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointments"
+    post:
+      summary: Create an appointment
+      operationId: createAppointment
+      tags: [appointments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewAppointment"
+      responses:
+        "201":
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+  /appointments/{appointmentId}:
+    parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get appointment by ID
+      operationId: getAppointmentById
+      tags: [appointments]
+      responses:
+        "200":
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          description: Appointment not found
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        tag: { type: string }
+    NewPet:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        tag: { type: string }
+    Pets:
+      type: array
+      items: { $ref: "#/components/schemas/Pet" }
+    Owner:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+    NewOwner:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string }
+        email: { type: string }
+    Owners:
+      type: array
+      items: { $ref: "#/components/schemas/Owner" }
+    Appointment:
+      type: object
+      properties:
+        id: { type: integer }
+        petId: { type: integer }
+        ownerId: { type: integer }
+        date: { type: string, format: date-time }
+    NewAppointment:
+      type: object
+      required: [petId, ownerId, date]
+      properties:
+        petId: { type: integer }
+        ownerId: { type: integer }
+        date: { type: string, format: date-time }
+    Appointments:
+      type: array
+      items: { $ref: "#/components/schemas/Appointment" }
