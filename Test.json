@@ -1,9 +1,9 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "",
+    "version": "1.0.0",
     "title": "Basic API",
-    "description": ""
+    "description": "Basic description"
   },
   "host": "api.example.com",
   "basePath": "/v1",
