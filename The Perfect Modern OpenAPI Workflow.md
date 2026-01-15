@@ -1,17 +1,4 @@
----
-title: The Perfect Modern OpenAPI Workflow
-authors: phil
-# canonical_url: 
-excerpt: >
-  Discover how OpenAPI can revolutionize your API development process with a
-  streamlined, Git-centric workflow. Learn about design, governance, and automated
-  deployment of documentation, mocks, and SDKs, all while maintaining a single
-  source of truth.
-date: 2025-03-04
----
-
-- TOC
-{:toc}
+## The Perfect Modern OpenAPI Workflow
 
 For decades designing and building APIs felt incredibly repetitive, because the
 whole job seemed to be repeating the "I" in API (Interface) over and over again
