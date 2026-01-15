@@ -1,12 +1,4 @@
----
-title: Handling Error Formats
-authors: phil
-excerpt: Describing HTTP errors efficiently in OpenAPI v3.1.
-date: 2024-08-07
----
-
-- TOC
-{:toc}
+## Handling Error Formats
 
 When your API is happy you return the data or whatever response the action would like to provide, but what happens when you stray off that happy path and into the world of errors? 
 
