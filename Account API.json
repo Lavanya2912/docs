@@ -4149,7 +4149,6 @@
       "GetTaxFormResponse": {
         "properties": {
           "content": {
-            "contentEncoding": "base64",
             "description": "The content of the tax form in the Base64 binary format.",
             "type": "string"
           },
@@ -5482,7 +5481,6 @@
       "UploadDocumentRequest": {
         "properties": {
           "documentContent": {
-            "contentEncoding": "base64",
             "description": "The content of the document, in Base64-encoded string format.\n\nTo learn about document requirements, refer to [Verification checks](https://docs.adyen.com/marketplaces-and-platforms/classic/verification-checks).",
             "type": "string"
           },
