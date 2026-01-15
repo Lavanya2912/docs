@@ -1,9 +1,5 @@
----
-title: Extending OpenAPI Documents with Overlays
-authors: phil
-excerpt: Use OpenAPI Overlays to enrich you API descriptions without creating conflicts in the source code.
-date: 2024-03-20
----
+## Extending OpenAPI Documents with Overlays
+
 
 - TOC
 {:toc}
