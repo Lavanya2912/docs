@@ -1,0 +1,298 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Numverify API",
+    "version": "1.0.0",
+    "description": "Numverify offers a full-featured yet simple RESTful JSON API for national and international phone number validation and information lookup for a total of 232 countries around the world.\n                         \nRequested numbers are processed in real-time, cross-checked with the latest international numbering plan databases and returned in handy JSON format enriched with useful carrier, geographical location and line type data.\n                   \nIntegrating the Numverify API into your application will enable you to verify the validity of phone numbers at the point of entry, protecting you from fraud and increasing good leads.\n"
+  },
+  "servers": [
+    {
+      "url": "https://apilayer.net/api",
+      "description": "Main Numverify API server"
+    }
+  ],
+  "paths": {
+    "/validate": {
+      "get": {
+        "operationId": "validatePhoneNumber",
+        "summary": "Number Validation",
+        "description": "Making a phone number validation request to the Numverify API is simple. Simply append the `number` parameter followed by the phone number you would like to validate to the API's Number Validation endpoint.",
+        "parameters": [
+          {
+            "name": "access_key",
+            "in": "query",
+            "required": true,
+            "description": "Your personal API access key required to authenticate requests.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "a30205eac65e4449857a686ff1374b7a"
+          },
+          {
+            "name": "number",
+            "in": "query",
+            "required": true,
+            "description": "Phone number to validate (can be in international or national format).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "+91 9392822376"
+          },
+          {
+            "name": "country_code",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country code. Required if you provide the number in national format.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Set to `1` to prettify the JSON response (mainly for debugging purposes).",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1
+              ]
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "required": false,
+            "description": "Provide a JSONP callback function name to wrap the response.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validation result for the requested phone number.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response object containing details about a validated phone number.",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean",
+                      "description": "Indicates whether the provided phone number is valid."
+                    },
+                    "number": {
+                      "type": "string",
+                      "description": "Original phone number submitted for validation."
+                    },
+                    "local_format": {
+                      "type": "string",
+                      "description": "Local/national representation of the phone number.\n**Important:** *When using national phone numbers, you must specify a country code. Do not include a country_code parameter when using international numbers (e.g. 14158586273).*"
+                    },
+                    "international_format": {
+                      "type": "string",
+                      "description": "International (E.164) formatted phone number."
+                    },
+                    "country_prefix": {
+                      "type": "string",
+                      "description": "Country calling code/prefix associated with the number."
+                    },
+                    "country_code": {
+                      "type": "string",
+                      "description": "Two-letter ISO country code."
+                    },
+                    "country_name": {
+                      "type": "string",
+                      "description": "Full country name."
+                    },
+                    "location": {
+                      "type": "string",
+                      "description": "Location or city information (if available).\n**Note:** *The location object may not be available for some phone numbers.*"
+                    },
+                    "carrier": {
+                      "type": "string",
+                      "description": "Carrier name of the phone number (if available).\n**Note:** *Carrier information may not be available for certain phone numbers.*"
+                    },
+                    "line_type": {
+                      "type": "string",
+                      "description": "Type of phone line (e.g., mobile, landline, VoIP).\n**Note:** *Knowing the line type of a given phone number makes it easy to decide optimally whether to send voice or text communications and ensures full compliance with the [FCC Telephone Consumer Protection Act (TCPA)](https://www.fcc.gov/page-not-found).*"
+                    }
+                  }
+                },
+                "examples": {
+                  "validNumberExample": {
+                    "summary": "Example response for a valid phone number",
+                    "value": {
+                      "valid": true,
+                      "number": "+14158586273",
+                      "local_format": "4158586273",
+                      "international_format": "+14158586273",
+                      "country_prefix": "+1",
+                      "country_code": "US",
+                      "country_name": "United States of America",
+                      "location": "Novato",
+                      "carrier": "AT&T Mobility LLC",
+                      "line_type": "mobile"
+                    }
+                  },
+                  "invalidNumberExample": {
+                    "summary": "Example response for an invalid phone number",
+                    "value": {
+                      "valid": false,
+                      "number": "12345",
+                      "local_format": "12345"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or missing parameters."
+          },
+          "403": {
+            "description": "Authentication error (missing or invalid access key)."
+          },
+          "404": {
+            "description": "Resource or function not found."
+          }
+        }
+      }
+    },
+    "/countries": {
+      "get": {
+        "operationId": "getSupportedCountries",
+        "summary": "Countries",
+        "description": "The Numverify API supports phone number validation for a total of **232 countries** (territories) around the world. Using the API's `countries` endpoint, you may access a comprehensive list of supported areas, including country names and dialling codes.",
+        "parameters": [
+          {
+            "name": "access_key",
+            "in": "query",
+            "required": true,
+            "description": "Your personal API access key required to authenticate requests.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "a30205eac65e4449857a686ff1374b7a"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of supported countries and dialing codes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response object containing supported countries and dialing codes.",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "country_name": {
+                        "type": "string",
+                        "description": "Full country name."
+                      },
+                      "dialling_code": {
+                        "type": "string",
+                        "description": "Country’s international dialing code/prefix."
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "countriesExample": {
+                    "summary": "Example response with supported countries",
+                    "value": {
+                      "US": {
+                        "country_name": "United States of America",
+                        "dialling_code": "+1"
+                      },
+                      "IN": {
+                        "country_name": "India",
+                        "dialling_code": "+91"
+                      },
+                      "GB": {
+                        "country_name": "United Kingdom",
+                        "dialling_code": "+44"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authentication error (missing or invalid access key)."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ValidationResponse": {
+        "type": "object",
+        "description": "Response object containing details about a validated phone number.",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "Indicates whether the provided phone number is valid."
+          },
+          "number": {
+            "type": "string",
+            "description": "Original phone number submitted for validation."
+          },
+          "local_format": {
+            "type": "string",
+            "description": "Local/national representation of the phone number.\n**Important:** *When using national phone numbers, you must specify a country code. Do not include a country_code parameter when using international numbers (e.g. 14158586273).*"
+          },
+          "international_format": {
+            "type": "string",
+            "description": "International (E.164) formatted phone number."
+          },
+          "country_prefix": {
+            "type": "string",
+            "description": "Country calling code/prefix associated with the number."
+          },
+          "country_code": {
+            "type": "string",
+            "description": "Two-letter ISO country code."
+          },
+          "country_name": {
+            "type": "string",
+            "description": "Full country name."
+          },
+          "location": {
+            "type": "string",
+            "description": "Location or city information (if available).\n**Note:** *The location object may not be available for some phone numbers.*"
+          },
+          "carrier": {
+            "type": "string",
+            "description": "Carrier name of the phone number (if available).\n**Note:** *Carrier information may not be available for certain phone numbers.*"
+          },
+          "line_type": {
+            "type": "string",
+            "description": "Type of phone line (e.g., mobile, landline, VoIP).\n**Note:** *Knowing the line type of a given phone number makes it easy to decide optimally whether to send voice or text communications and ensures full compliance with the [FCC Telephone Consumer Protection Act (TCPA)](https://www.fcc.gov/page-not-found).*"
+          }
+        }
+      },
+      "CountriesResponse": {
+        "type": "object",
+        "description": "Response object containing supported countries and dialing codes.",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "country_name": {
+              "type": "string",
+              "description": "Full country name."
+            },
+            "dialling_code": {
+              "type": "string",
+              "description": "Country’s international dialing code/prefix."
+            }
+          }
+        }
+      }
+    }
+  }
+}
