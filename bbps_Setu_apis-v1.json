@@ -1,0 +1,5159 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Setu Collect APIs",
+    "description": "The Setu Collect API enables billers and payment processors to integrate with the Bharat Bill Payment System (BBPS) via Setu's platform.\n\n**Key actors in this API:**\n- **Biller** — implements endpoints to expose bill data and acknowledge payments.\n- **Payer / Payment Processor** — calls Setu endpoints to fetch bills, initiate payments, and settle transactions.\n- **Setu Platform** — acts as the intermediary, routing requests between actors and NPCI/BBPS.\n\n**Integration flow:**\n1. A payer app calls `/utilities/bills/fetch` to retrieve outstanding bills for a customer.\n2. The payer app triggers a payment and calls `/utilities/bills/{platformBillId}/fulfilment` to record it.\n3. Setu calls the biller's `/<partner-base-api-url>/bills/fetchReceipt` to obtain a payment receipt.\n4. Setu pushes payment event notifications to the partner's callback URL.\n\n**Authentication:** All calls to Setu-hosted endpoints require a JWT `Authorization` header and an `X-Setu-Product-Instance-ID` header. Obtain the JWT by calling the token endpoint with your `clientID` and `secret`.\n\n<a href=\"http://docs.setu.co/\" target=\"_blank\">Full Setu Collect Documentation ↗</a>\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://uat.setu.co/api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "bbps-integration-implement",
+      "description": "A collection of APIs to be implemented by a `Biller` actor, to facilitate bill fetch and acknowledge bill payments with receipts\n",
+      "x-displayName": "APIs to Implement"
+    },
+    {
+      "name": "bbps-integration-events",
+      "description": "Notifications are pushed to `<Callback URL>/api/notifications`. A partner can listen to this endpoint and consume notification requests.\n",
+      "x-displayName": "Notifications"
+    },
+    {
+      "name": "bbps-integration-reports",
+      "description": "Endpoints for retrieving transaction and settlement reports from the Setu platform. Reports can be filtered by product instance and date range.",
+      "x-displayName": "Reports"
+    },
+    {
+      "name": "bbps-integration",
+      "description": "A collection of APIs to be invoked by a `Payer` actor, to create a bill, view the status of a bill and test integrations\n",
+      "x-displayName": "APIs to Call"
+    },
+    {
+      "name": "Billers",
+      "description": "A collection of APIs for billers to implement."
+    },
+    {
+      "name": "Notifications",
+      "description": "A collection of APIs Setu uses to notify developer partners."
+    }
+  ],
+  "paths": {
+    "/<partner-base-api-url>/bills/fetch": {
+      "post": {
+        "tags": [
+          "APIs to Implement"
+        ],
+        "summary": "Respond to bill fetch",
+        "description": "Biller-side endpoint. Setu calls this when a payer requests outstanding bills for a customer. The biller must validate the customer account using the provided identifiers and return the list of outstanding bills. Return a `billFetchStatus` of `AVAILABLE` if bills exist, `NO_OUTSTANDING` if the customer is valid but has no dues, or `NOT_SUPPORTED` if bill fetch is not supported.",
+        "operationId": "fetchCustomerBills",
+        "parameters": [
+          {
+            "name": "ref_id",
+            "in": "header",
+            "description": "Unique alphanumeric BBPS Reference ID provided by NPCI for this request. Setu forwards this on every request to the biller's endpoints. Echo it back in your response for end-to-end traceability.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "NPCI12345678ABCD"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for fetching a bill",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/billerFetchBillsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/billerFetchBillsResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "fetchBillandValidateCustomer"
+      }
+    },
+    "/<partner-base-api-url>/bills/fetchReceipt": {
+      "post": {
+        "tags": [
+          "APIs to Implement"
+        ],
+        "summary": "Acknowledge payment and fetch receipt",
+        "description": "Biller-side endpoint. Setu calls this after a successful payment to acknowledge the transaction and obtain the biller's official payment receipt. The biller must record the payment in its system and return a receipt containing a unique receipt ID and timestamp. This receipt is relayed back to the payer app as proof of payment.",
+        "operationId": "fetchBillReceipt",
+        "parameters": [
+          {
+            "name": "ref_id",
+            "in": "header",
+            "description": "Unique alphanumeric BBPS Reference ID provided by NPCI for this request. Setu forwards this on every request to the biller's endpoints. Echo it back in your response for end-to-end traceability.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "NPCI12345678ABCD"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for fetching a bill.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fetchReceiptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/fetchBillReceiptResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "fetchBillReceiptAfterPayment"
+      }
+    },
+    "/<partner-base-api-url>/customer/validate": {
+      "post": {
+        "tags": [
+          "APIs to Implement"
+        ],
+        "summary": "Respond to customer validation",
+        "description": "Biller-side endpoint. Setu calls this to verify that a customer account exists in the biller's system before creating a bill. The biller must validate the provided customer identifiers and return the corresponding `billerBillID` and customer details. This is typically used for billers that support exactness types `ANY` or `EXACT_DOWN`, where no pre-generated bill exists.",
+        "operationId": "validateCustomer",
+        "parameters": [
+          {
+            "name": "ref_id",
+            "in": "header",
+            "description": "Unique alphanumeric BBPS Reference ID provided by NPCI for this request. Setu forwards this on every request to the biller's endpoints. Echo it back in your response for end-to-end traceability.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "NPCI12345678ABCD"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for customer validation.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/billerValidateCustomerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/billerValidateCustomerResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "validateCustomerRequest"
+      }
+    },
+    "/<partner-base-api-url>/notifications": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Receive payment event notification",
+        "description": "Partner-side webhook endpoint. Setu POSTs payment lifecycle events to `<Callback URL>/api/notifications`. Implement this endpoint to handle events such as `BILL_SETTLEMENT_SUCCESSFUL`, `PAYMENT_SUCCESSFUL`, `PAYMENT_FAILED`, and others. Your endpoint must return HTTP 200 to acknowledge receipt; Setu will retry failed deliveries. Each request contains an `events` array — process all events in the array. The `partnerDetails` object identifies which app and product instance the events belong to.",
+        "operationId": "notification",
+        "requestBody": {
+          "description": "Input parameters containing notification data. For example payloads see https://docs.setu.co/notifications#notification-events",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/notificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Notification received and processed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "notificationRequest"
+      }
+    },
+    "/reports": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Retrieve reports",
+        "description": "Fetches transaction or settlement reports for a given product instance from the Setu system. Use the `filters` field to narrow the report by date range or other criteria. The response contains a `records` array of individual data rows and a `metadata` object describing the report contents.",
+        "operationId": "getReport",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for Get Report.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/getReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/getReportResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "GetReportRequest"
+      }
+    },
+    "/utilities/billers/bills/{billerBillId}": {
+      "get": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Get bill by biller bill ID",
+        "description": "Retrieves all Setu platform bills associated with the given `billerBillID` (the biller's own identifier for a bill). Optionally filter results by bill status. Useful for billers and payers that need to look up Setu bill records using their own reference IDs.",
+        "operationId": "getBillWithBillerBillID",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "billerBillId",
+            "in": "path",
+            "description": "The unique identifier for a bill on the biller's system.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Current status of bill in Setu.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CREATED",
+                "WAITING_FOR_CREDIT",
+                "CREDIT_RECEIVED",
+                "SETTLEMENT_PENDING",
+                "SETTLED",
+                "EXPIRED",
+                "PAYMENT_ACK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/billWithBillerBillIdResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/bills/billers": {
+      "get": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Fetch biller list",
+        "description": "Returns the list of all billers registered under the authenticated product instance. Each biller record includes allowed payment instruments, customer identifier parameters, logo URL, and receipt fetch capability. Use this to present a biller selection UI to the customer.",
+        "operationId": "getBillers",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/fetchBillersResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/bills/fetch": {
+      "post": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Fetch outstanding bills",
+        "description": "Fetches the list of outstanding bills for a customer with the specified biller. Provide the `billerProductInstanceID` and the `customerIdentifiers` required by that biller (e.g., mobile number, account number). Setu proxies this request to the biller's fetch endpoint and returns the result as Setu `platformBill` objects.",
+        "operationId": "fetchBills",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for Fetch bill.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fetchBillsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/fetchBillsResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "fetchBillsRequest"
+      }
+    },
+    "/utilities/bills/settlement": {
+      "post": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Settle bill payments",
+        "description": "Called by the payment processor after funds have been received to record settlement details against one or more bills. The request includes the UTR, VAN address, payment instrument, and individual transaction breakdowns. This transitions matched bills to `SETTLEMENT_SUCCESSFUL` status.",
+        "operationId": "billSettlement",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for Bill Settlement.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/billSettlementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "billSettlement"
+      }
+    },
+    "/utilities/bills/{platformBillId}": {
+      "get": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Get bill by Setu platform ID",
+        "description": "Retrieves the full details of a single bill using its unique Setu-assigned `platformBillID`. Returns bill aggregates, line items, taxes, fees, payment addresses, current status, and receipt (if available). Use this to poll bill status or display bill details to the customer.",
+        "operationId": "getBillWithID",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "platformBillId",
+            "in": "path",
+            "description": "The unique identifier for a bill in Setu.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/platformBill"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/bills/{platformBillId}/fulfilment": {
+      "post": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Fulfil a bill payment",
+        "description": "Records a payment against a Setu bill identified by `platformBillId`. Provide the payment instrument, amount, and transaction timestamp. Setu validates the payment against the bill's `amountExactness` rules and, if successful, calls the biller's receipt endpoint to obtain a payment receipt. Returns the updated bill status and receipt details.",
+        "operationId": "billFulfilment",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "platformBillId",
+            "in": "path",
+            "description": "The unique identifier for a bill in Setu.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for Bill Fulfilment.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/billFulfilmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/billFulfilmentResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "billFulfilment"
+      }
+    },
+    "/utilities/bills/{platformBillId}/expire": {
+      "post": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Expire a bill",
+        "description": "Marks a Setu bill as `BILL_EXPIRED`, preventing any further payment attempts against it. Call this when the biller's system determines a bill is no longer payable (e.g., the due date has passed or the bill was cancelled). This is a terminal operation and cannot be undone.",
+        "operationId": "expireBill",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "platformBillId",
+            "in": "path",
+            "description": "The unique identifier for a bill in Setu.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/customer/validate": {
+      "post": {
+        "tags": [
+          "APIs to call"
+        ],
+        "summary": "Validate customer with biller",
+        "description": "Validates a customer account with the specified biller and, if valid, creates a Setu bill for that customer. This is used for billers that support `amountExactness` types `ANY` or `EXACT_DOWN`, where the customer determines the payment amount at checkout. Returns the created `platformBill` with payment addresses.",
+        "operationId": "validate",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Auth token generated using credentials provided to you",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Setu-Product-Instance-ID",
+            "in": "header",
+            "description": "Identifier for product instance. Required for authorisation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input parameters for customer validation.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/validationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/validationResponse"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/baseResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — the request body is malformed, missing required fields, or contains invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — the `Authorization` token is missing, expired, or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — the authenticated identity does not have permission to perform this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — the requested resource (bill, actor, partner) does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed — the HTTP method used is not supported for this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — the rate limit for this endpoint has been exceeded. Retry after the duration specified in the `Retry-After` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error — an unexpected error occurred on the Setu platform. Include the `traceID` from the error response when contacting Setu support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable — the Setu platform is temporarily unavailable due to maintenance. Retry after a short interval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "validationRequest"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "actor": {
+        "allOf": [
+          {
+            "required": [
+              "createdAt",
+              "id",
+              "lastModifiedAt"
+            ],
+            "type": "object",
+            "properties": {
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "id": {
+                "type": "string"
+              },
+              "lastModifiedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/baseActor"
+          }
+        ]
+      },
+      "address": {
+        "required": [
+          "city",
+          "country",
+          "line1",
+          "pincode",
+          "state"
+        ],
+        "type": "object",
+        "description": "Physical postal address.",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name.",
+            "example": "Bengaluru"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country name.",
+            "example": "India"
+          },
+          "line1": {
+            "type": "string",
+            "description": "Primary address line (street, building number, locality).",
+            "example": "123, MG Road"
+          },
+          "line2": {
+            "type": "string",
+            "description": "Secondary address line (apartment, floor, landmark). Optional."
+          },
+          "pincode": {
+            "type": "string",
+            "description": "Postal/ZIP code.",
+            "example": "560001"
+          },
+          "state": {
+            "type": "string",
+            "description": "State or union territory.",
+            "example": "Karnataka"
+          }
+        }
+      },
+      "amount": {
+        "required": [
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "currencyCode": {
+            "type": "string",
+            "description": "Currency code of the amount, in the ISO-4217 standard."
+          },
+          "value": {
+            "type": "number",
+            "description": "Amount value in the smallest subunit of the currency. If a currency has two or more subunits, use the smallest one. For example, For INR it would be paisa, and for Yen, which has two subunits sen(1/100) and rin(1/1000), it would be rin.",
+            "format": "int"
+          }
+        },
+        "description": "Amount to be refunded"
+      },
+      "amountExactness": {
+        "type": "string",
+        "description": "Exactness of the bill amount. \"ANY\" means customer can pay any amount. \"EXACT\" means customer can pay only the amount specified in the bill. \"EXACT_UP\" means customer must pay at least the specified amount or more, and \"EXACT_DOWN\" means customer can pay any amount upto the specified amount. \"RANGE\" means the customer can pay any amount between amountMin and amountMax specified in the validationRules.",
+        "enum": [
+          "ANY",
+          "EXACT",
+          "EXACT_UP",
+          "EXACT_DOWN",
+          "RANGE"
+        ]
+      },
+      "amountObject": {
+        "required": [
+          "amount",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the amount field."
+          }
+        }
+      },
+      "amountValidation": {
+        "type": "object",
+        "properties": {
+          "maximum": {
+            "type": "number",
+            "description": "Maximum amount to be accepted as payment.",
+            "format": "int"
+          },
+          "minimum": {
+            "type": "number",
+            "description": "Minimum amount to be accepted as payment.",
+            "format": "int"
+          }
+        },
+        "description": "Amount validation rules."
+      },
+      "apiKeys": {
+        "required": [
+          "schemeID",
+          "secret"
+        ],
+        "type": "object",
+        "properties": {
+          "schemeID": {
+            "type": "string",
+            "description": "The Scheme ID (also referred to as `clientID`) used to identify the API key pair. Provide this as the `clientID` when requesting an auth token."
+          },
+          "secret": {
+            "type": "string",
+            "description": "The secret credential paired with the `schemeID`. Treat this as a password — store securely and never expose in client-side code."
+          }
+        },
+        "description": "API key pair used to authenticate with the Setu platform. Use the `schemeID` and `secret` to obtain a JWT auth token from the token endpoint."
+      },
+      "app": {
+        "allOf": [
+          {
+            "required": [
+              "createdAt",
+              "id",
+              "lastModifiedAt"
+            ],
+            "type": "object",
+            "properties": {
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "id": {
+                "type": "string"
+              },
+              "lastModifiedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/baseApp"
+          }
+        ]
+      },
+      "appCredentialsResponse": {
+        "type": "object",
+        "properties": {
+          "apiKeys": {
+            "$ref": "#/components/schemas/apiKeys"
+          }
+        },
+        "description": "Details of the api keys for the app."
+      },
+      "bankAccount": {
+        "required": [
+          "accountID"
+        ],
+        "type": "object",
+        "properties": {
+          "accountID": {
+            "type": "string",
+            "description": "Used to uniquely identify the account."
+          },
+          "ifsc": {
+            "type": "string",
+            "description": "IFSC of the account."
+          }
+        }
+      },
+      "baseActor": {
+        "required": [
+          "appId",
+          "configuration",
+          "description",
+          "enableHttpSignature",
+          "name",
+          "productType",
+          "type"
+        ],
+        "type": "object",
+        "description": "Core properties of an actor in the Setu system. An actor represents a participant in the bill payment ecosystem (e.g., a biller, payer, or payment processor).",
+        "properties": {
+          "appId": {
+            "type": "string",
+            "description": "Unique identifier of the app this actor belongs to."
+          },
+          "configuration": {
+            "type": "object",
+            "properties": {},
+            "description": "Actor-specific configuration object. Structure varies by actor type — refer to Setu documentation for the expected fields for each type."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this actor."
+          },
+          "enableHttpSignature": {
+            "type": "boolean",
+            "description": "When `true`, Setu will sign requests sent to this actor's callback URL using HTTP signatures, allowing the actor to verify request authenticity."
+          },
+          "name": {
+            "type": "string",
+            "description": "Internal name used to identify this actor."
+          },
+          "productType": {
+            "type": "string",
+            "description": "The Setu product this actor participates in. `Collect` for bill payment flows; `GST` for GST payment flows.",
+            "enum": [
+              "Collect",
+              "GST"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "The role this actor plays in the ecosystem. `Biller` — exposes bill data and acknowledges payments. `Payer` / `PayerAggregator` — initiates payments on behalf of customers. `PaymentProcessor` — handles fund movement and settlement. `Bank` — provides banking infrastructure. `Reporter` — reads reports only.",
+            "enum": [
+              "Bank",
+              "Biller",
+              "BillerAggregator",
+              "Payer",
+              "PayerAggregator",
+              "PaymentProcessor",
+              "GSTPayer",
+              "GSTProcessor",
+              "Reporter"
+            ]
+          }
+        }
+      },
+      "baseApp": {
+        "required": [
+          "description",
+          "name",
+          "partnerId"
+        ],
+        "type": "object",
+        "properties": {
+          "bizRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/bizRule"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": "string"
+          }
+        }
+      },
+      "baseBizRule": {
+        "required": [
+          "data",
+          "displayName",
+          "type"
+        ],
+        "type": "object",
+        "description": "A business rule applied to an app to configure charges, commissions, or settlement splits.",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {},
+            "description": "Rule-specific configuration data. The structure depends on the `type` field — for example, a `Charge` rule would contain MDR percentage, while a `SplitSettlement` rule would contain account and split details."
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Human-readable label for this business rule, shown in the Setu dashboard."
+          },
+          "type": {
+            "type": "string",
+            "description": "Category of the business rule. `Charge` — platform fee charged to the customer. `Commission` — revenue shared with the partner. `SplitSettlement` — funds split across multiple bank accounts. `SplitGST` — GST apportioned across entities.",
+            "enum": [
+              "Charge",
+              "Commission",
+              "SplitSettlement",
+              "SplitGST"
+            ]
+          }
+        }
+      },
+      "basePartner": {
+        "required": [
+          "address",
+          "contacts",
+          "currency",
+          "description",
+          "displayName",
+          "name",
+          "taxIdNum"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/address"
+          },
+          "contacts": {
+            "required": [
+              "business"
+            ],
+            "type": "object",
+            "properties": {
+              "business": {
+                "$ref": "#/components/schemas/contact"
+              },
+              "technical": {
+                "$ref": "#/components/schemas/contact"
+              }
+            }
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Legal Name"
+          },
+          "taxIdNum": {
+            "type": "string",
+            "description": "Tax Identification Number"
+          }
+        }
+      },
+      "baseResponse": {
+        "required": [
+          "status",
+          "success"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code for the response.",
+            "example": 200
+          },
+          "success": {
+            "type": "boolean",
+            "description": "Indicator to denote whether the request is successful."
+          }
+        }
+      },
+      "baseType": {
+        "type": "string",
+        "enum": [
+          "UPI",
+          "ACCOUNT"
+        ]
+      },
+      "batchCreateRefundResponse": {
+        "properties": {
+          "refunds": {
+            "type": "array",
+            "description": "Contains status for each transaction being refunded.",
+            "items": {
+              "$ref": "#/components/schemas/batchRefundResponseItem"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/batchRefundResponseBase"
+          }
+        ]
+      },
+      "batchRefundRequest": {
+        "required": [
+          "refunds"
+        ],
+        "type": "object",
+        "properties": {
+          "refunds": {
+            "type": "array",
+            "description": "Contains individual transactions to refund.",
+            "items": {
+              "$ref": "#/components/schemas/batchRefundRequestItem"
+            }
+          }
+        }
+      },
+      "batchRefundRequestItem": {
+        "required": [
+          "seqNo"
+        ],
+        "properties": {
+          "seqNo": {
+            "type": "integer",
+            "description": "Unique integer representing individual refund items, used for matching corresponding items in the response."
+          }
+        },
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/refundRequestItem"
+          }
+        ]
+      },
+      "batchRefundResponse": {
+        "properties": {
+          "refunds": {
+            "type": "array",
+            "description": "Contains status for each transaction being refunded.",
+            "items": {
+              "$ref": "#/components/schemas/refundResponseItem"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/batchRefundResponseBase"
+          }
+        ]
+      },
+      "batchRefundResponseBase": {
+        "type": "object",
+        "description": "Base fields shared by batch refund response types.",
+        "properties": {
+          "batchID": {
+            "type": "string",
+            "description": "Unique identifier assigned by Setu to this batch of refunds. Use this ID to query the status of the batch later."
+          }
+        }
+      },
+      "batchRefundResponseErrorItem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Custom Setu error code."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Detailed description of error."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short human-readable summary of error."
+          }
+        }
+      },
+      "batchRefundResponseItem": {
+        "required": [
+          "seqNo",
+          "success"
+        ],
+        "properties": {
+          "seqNo": {
+            "type": "integer"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/refundResponseItem"
+          },
+          {
+            "$ref": "#/components/schemas/batchRefundResponseErrorItem"
+          }
+        ]
+      },
+      "bill": {
+        "required": [
+          "aggregates",
+          "amountExactness",
+          "billerBillID",
+          "customerAccount",
+          "generatedOn",
+          "platformFee",
+          "recurrence"
+        ],
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {},
+            "description": "Additional information for the bill passed by the biller."
+          },
+          "aggregates": {
+            "$ref": "#/components/schemas/billAggregates"
+          },
+          "amountExactness": {
+            "$ref": "#/components/schemas/amountExactness"
+          },
+          "billerBillID": {
+            "type": "string",
+            "description": "Unique bill identifier in the biller's system."
+          },
+          "customerAccount": {
+            "$ref": "#/components/schemas/billCustomerAccount"
+          },
+          "discounts": {
+            "type": "array",
+            "description": "Contains discounts on the bill.",
+            "items": {
+              "$ref": "#/components/schemas/discount"
+            }
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date of the genrated bill in the ISO 8601 format, upto seconds precision. This date has to be greater than the `billGeneratedOn` date.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fees": {
+            "type": "array",
+            "description": "An array containing bill-level additional costs, such as \"Delivery fees\" or \"Late charges\".",
+            "items": {
+              "$ref": "#/components/schemas/fees"
+            }
+          },
+          "generatedOn": {
+            "type": "string",
+            "description": "Generation date of the bill in the ISO 8601 format, upto seconds precision.",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "description": "Contains individual line items for the bill.",
+            "items": {
+              "$ref": "#/components/schemas/items"
+            }
+          },
+          "platformFee": {
+            "$ref": "#/components/schemas/fees"
+          },
+          "recurrence": {
+            "$ref": "#/components/schemas/billRecurrence"
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/settlementConfiguration"
+          },
+          "taxes": {
+            "type": "array",
+            "description": "Contains taxes for the bill.",
+            "items": {
+              "$ref": "#/components/schemas/billTax"
+            }
+          },
+          "transactionNote": {
+            "type": "string"
+          },
+          "validationRules": {
+            "$ref": "#/components/schemas/validationRules"
+          }
+        },
+        "description": "List of required details to pay a bill.",
+        "x-go-name": "BillAPIModel"
+      },
+      "billAggregates": {
+        "required": [
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "discount": {
+            "$ref": "#/components/schemas/amountObject"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/amountObject"
+          },
+          "itemQuantity": {
+            "$ref": "#/components/schemas/itemQuantity"
+          },
+          "subTotal": {
+            "$ref": "#/components/schemas/amountObject"
+          },
+          "tax": {
+            "$ref": "#/components/schemas/amountObject"
+          },
+          "total": {
+            "$ref": "#/components/schemas/amountObject"
+          }
+        },
+        "description": "Contains bill-level aggregates of individual data points. For example \"Total number of items\" is an aggregate."
+      },
+      "billBase": {
+        "required": [
+          "aggregates",
+          "amountExactness",
+          "billType",
+          "billerBillID",
+          "customerAccount",
+          "recurrence"
+        ],
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {},
+            "description": "Additional information which is specific to that bill type."
+          },
+          "aggregates": {
+            "$ref": "#/components/schemas/billAggregates"
+          },
+          "amountExactness": {
+            "$ref": "#/components/schemas/amountExactness"
+          },
+          "billType": {
+            "$ref": "#/components/schemas/billType"
+          },
+          "billerActorID": {
+            "type": "string",
+            "description": "Unique identifier of the biller actor."
+          },
+          "billerBillID": {
+            "type": "string",
+            "description": "Unique bill identifier provided by the biller. For GST, it is the CPIN."
+          },
+          "billerCategory": {
+            "type": "string",
+            "description": "Category of the bill."
+          },
+          "customer": {
+            "$ref": "#/components/schemas/billCustomer"
+          },
+          "customerAccount": {
+            "$ref": "#/components/schemas/customerAccount"
+          },
+          "discounts": {
+            "type": "array",
+            "description": "Contains the discounts on the bill.",
+            "items": {
+              "$ref": "#/components/schemas/discount"
+            }
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date of the bill in the ISO 8601 format, upto seconds precision.",
+            "format": "date-time",
+            "nullable": true,
+            "x-omitempty": false
+          },
+          "fees": {
+            "type": "array",
+            "description": "An array containing bill-level additional costs, such as \"Delivery fees\" or \"Late charges\".",
+            "items": {
+              "$ref": "#/components/schemas/fees"
+            }
+          },
+          "generatedOn": {
+            "type": "string",
+            "description": "Creation date of the bill in the ISO 8601 format, upto seconds precision.",
+            "format": "date-time",
+            "nullable": true,
+            "x-omitempty": false
+          },
+          "items": {
+            "type": "array",
+            "description": "Contains individual line items for the bill.",
+            "items": {
+              "$ref": "#/components/schemas/items"
+            }
+          },
+          "recurrence": {
+            "$ref": "#/components/schemas/billRecurrence"
+          },
+          "taxes": {
+            "type": "array",
+            "description": "Contains the taxes on the bill.",
+            "items": {
+              "$ref": "#/components/schemas/billTax"
+            }
+          },
+          "validationRules": {
+            "$ref": "#/components/schemas/validationRules"
+          }
+        },
+        "x-go-name": "BillBaseAPIModel"
+      },
+      "billCustomer": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/customer"
+          }
+        ],
+        "x-go-name": "Customer"
+      },
+      "billCustomerAccount": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/customerAccount"
+          }
+        ],
+        "x-go-name": "CustomerAccount"
+      },
+      "billFetchStatus": {
+        "type": "string",
+        "description": "Result of a bill fetch operation from the biller. `AVAILABLE` — one or more outstanding bills were found for the customer. `NO_OUTSTANDING` — the customer is valid but has no outstanding bills. `NOT_SUPPORTED` — bill fetch is not supported for this biller (used by billers that only support customer validation).",
+        "enum": [
+          "NOT_SUPPORTED",
+          "NO_OUTSTANDING",
+          "AVAILABLE"
+        ]
+      },
+      "billFulfilmentRequest": {
+        "required": [
+          "payment",
+          "transactionID"
+        ],
+        "type": "object",
+        "properties": {
+          "payment": {
+            "$ref": "#/components/schemas/fulfilmentPaymentDetails"
+          },
+          "transactionID": {
+            "type": "string",
+            "description": "Unique transaction reference ID for a payment in the payer app system",
+            "example": "201905161605011233"
+          },
+          "refID": {
+            "type": "string",
+            "description": "Unique alphanumeric BBPS Reference ID sent by NPCI"
+          }
+        },
+        "description": "Specifications of the bill fulfilment request.",
+        "x-go-name": "BillFulfilmentRequestAPIModel"
+      },
+      "billFulfilmentResponse": {
+        "required": [
+          "platformBillID",
+          "platformBillStatus",
+          "receipt"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of bill."
+          },
+          "platformBillID": {
+            "type": "string",
+            "description": "Unique identifier of bill in Setu."
+          },
+          "platformBillStatus": {
+            "$ref": "#/components/schemas/setuBillStatus"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/billReceiptWithStatus"
+          }
+        },
+        "x-go-name": "BillFulfilmentResponseAPIModel"
+      },
+      "billReceipt": {
+        "required": [
+          "date",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Receipt date of the bill.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "Receipt number of the bill."
+          }
+        },
+        "description": "Receipt details of a bill."
+      },
+      "billReceiptWithStatus": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Receipt date of the bill.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "Receipt number of the bill."
+          },
+          "status": {
+            "$ref": "#/components/schemas/receiptFetchStatus"
+          }
+        },
+        "description": "Receipt details of a bill."
+      },
+      "billRecurrence": {
+        "type": "string",
+        "description": "Recurrence pattern of the bill. `ONE_TIME` — a single non-recurring bill. `DAILY` / `WEEKLY` / `FORTNIGHTLY` / `MONTHLY` / `QUARTERLY` / `HALF_YEARLY` / `YEARLY` — regular billing cycles. `AS_PRESENTED` — billed whenever the biller decides to generate one (e.g., on-demand utility bills).",
+        "enum": [
+          "ONE_TIME",
+          "DAILY",
+          "WEEKLY",
+          "FORTNIGHTLY",
+          "MONTHLY",
+          "QUARTERLY",
+          "HALF_YEARLY",
+          "YEARLY",
+          "AS_PRESENTED"
+        ]
+      },
+      "billSettlementDetails": {
+        "required": [
+          "aggregates",
+          "amount",
+          "fileName",
+          "ifsc",
+          "instrument",
+          "transactions",
+          "utr",
+          "vanAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "aggregates": {
+            "$ref": "#/components/schemas/settlementAggregates"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Name of the file in which the settlement details are present."
+          },
+          "ifsc": {
+            "type": "string",
+            "description": "IFSC for the VAN address to which the payment was made."
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/paymentInstrument"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/paymentSchemes"
+          },
+          "transactions": {
+            "type": "array",
+            "description": "List of individual payment or refund transactions included in this settlement batch.",
+            "items": {
+              "$ref": "#/components/schemas/transactions"
+            }
+          },
+          "utr": {
+            "type": "string",
+            "description": "Bank UTR for the bill payment made by the customer or the challan number in case of CASH payments."
+          },
+          "vanAddress": {
+            "type": "string",
+            "description": "VAN address to which the settlement for the bills were made."
+          }
+        }
+      },
+      "billSettlementRequest": {
+        "required": [
+          "settlement"
+        ],
+        "type": "object",
+        "properties": {
+          "settlement": {
+            "$ref": "#/components/schemas/billSettlementDetails"
+          }
+        },
+        "description": "Specifications of the bill settlement request.",
+        "x-go-name": "BillSettlementRequestAPIModel"
+      },
+      "billTax": {
+        "required": [
+          "amount",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "components": {
+            "type": "array",
+            "description": "Parent object containing the breakdown of individual tax components at the bill level.",
+            "items": {
+              "$ref": "#/components/schemas/taxComponent"
+            }
+          },
+          "computation": {
+            "$ref": "#/components/schemas/computation"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the tax applied on the particular bill."
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of tax component levied."
+          }
+        },
+        "description": "Tax parent object containing all the relevant taxes and their individual components at the bill-level."
+      },
+      "billType": {
+        "type": "string",
+        "description": "Type of bill. eg. GST.",
+        "enum": [
+          "GST",
+          "COLLECT"
+        ]
+      },
+      "billWithBillerBillIdResponse": {
+        "required": [
+          "bills"
+        ],
+        "type": "object",
+        "properties": {
+          "bills": {
+            "type": "array",
+            "description": "List of bills for the supplied biller billID.",
+            "items": {
+              "$ref": "#/components/schemas/platformBill"
+            }
+          }
+        },
+        "description": "Details of bills for the supplied biller billID."
+      },
+      "biller": {
+        "required": [
+          "allowedPaymentInstruments",
+          "customerParameters",
+          "deemedEnabled",
+          "description",
+          "logoURL",
+          "receiptFetchStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "allowedPaymentInstruments": {
+            "type": "array",
+            "description": "Instruments allowed for bill payment.",
+            "items": {
+              "$ref": "#/components/schemas/paymentInstrument"
+            }
+          },
+          "category": {
+            "type": "string",
+            "description": "Category code the biller belongs to."
+          },
+          "customerParameters": {
+            "type": "array",
+            "description": "List of parameters to identify a customer for the biller.",
+            "items": {
+              "$ref": "#/components/schemas/billerCustomerParams"
+            }
+          },
+          "deemedEnabled": {
+            "type": "boolean",
+            "description": "Enable deemed payments for biller."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the biller."
+          },
+          "logoURL": {
+            "type": "string",
+            "description": "URL of the biller logo in PNG or SVG format."
+          },
+          "partner": {
+            "required": [
+              "id",
+              "name"
+            ],
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier of a biller partner in Setu."
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name of the biller partner."
+              }
+            },
+            "description": "Partner details such as ID and Name."
+          },
+          "productInstance": {
+            "$ref": "#/components/schemas/productInstance"
+          },
+          "receiptFetchStatus": {
+            "$ref": "#/components/schemas/receiptFetchStatus"
+          }
+        },
+        "description": "Biller entity data",
+        "x-go-name": "BillerAPIModel"
+      },
+      "billerCustomerIdentifier": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/customerIdentifier"
+          }
+        ],
+        "x-go-name": "BillerCustomerIdentifierAPIModel"
+      },
+      "billerCustomerParams": {
+        "required": [
+          "attributeName",
+          "dataType",
+          "displayName",
+          "isMandatory",
+          "maxLength",
+          "minLength"
+        ],
+        "type": "object",
+        "properties": {
+          "attributeName": {
+            "type": "string",
+            "description": "Attribute name to be passed in the fetch bill request."
+          },
+          "dataType": {
+            "type": "string",
+            "description": "Data type for the field which needs to be used in validation."
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Human-readable label for this customer parameter shown in the payer app (e.g., 'Mobile Number', 'Consumer Account Number')."
+          },
+          "isMandatory": {
+            "type": "boolean",
+            "description": "Defines if a particular parameter must be passed."
+          },
+          "maxLength": {
+            "type": "integer",
+            "description": "Maximum length of the parameter."
+          },
+          "minLength": {
+            "type": "integer",
+            "description": "Minimum length of the parameter."
+          }
+        },
+        "description": "Specifications of each customer parameter.",
+        "x-go-name": "BillerCustomerParamsAPIModel"
+      },
+      "billerFetchBillsRequest": {
+        "required": [
+          "customerIdentifiers"
+        ],
+        "type": "object",
+        "properties": {
+          "customerIdentifiers": {
+            "type": "array",
+            "description": "List of parameters to uniquely identify a customer.",
+            "items": {
+              "$ref": "#/components/schemas/customerIdentifier"
+            }
+          }
+        },
+        "description": "Details of customer identifiers."
+      },
+      "billerFetchBillsResponse": {
+        "required": [
+          "billDetails",
+          "customer"
+        ],
+        "type": "object",
+        "properties": {
+          "billDetails": {
+            "$ref": "#/components/schemas/fetchBillsDetails"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/customer"
+          }
+        },
+        "description": "Details of bills for the supplied customer identifiers."
+      },
+      "billerValidateCustomerRequest": {
+        "required": [
+          "customerIdentifiers"
+        ],
+        "type": "object",
+        "properties": {
+          "customerIdentifiers": {
+            "type": "array",
+            "description": "List of parameters to uniquely identify a customer.",
+            "items": {
+              "$ref": "#/components/schemas/customerIdentifier"
+            }
+          }
+        },
+        "description": "Details of customer identifiers."
+      },
+      "billerValidateCustomerResponse": {
+        "required": [
+          "billerBillID",
+          "customer"
+        ],
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {},
+            "description": "Additional information for the bill passed by the biller."
+          },
+          "billerBillID": {
+            "type": "string",
+            "description": "Unique bill identifier in the biller's system."
+          },
+          "customer": {
+            "$ref": "#/components/schemas/customer"
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/settlementConfigurationWithoutParts"
+          }
+        },
+        "description": "Details of customer validation for the supplied identifiers."
+      },
+      "bizRule": {
+        "allOf": [
+          {
+            "required": [
+              "id"
+            ],
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/baseBizRule"
+          }
+        ]
+      },
+      "callbackEventCreateRequest": {
+        "required": [
+          "eventData",
+          "eventTimeStamp",
+          "eventType",
+          "eventUID"
+        ],
+        "type": "object",
+        "properties": {
+          "eventData": {
+            "type": "object",
+            "properties": {},
+            "description": "Payload of an event which contains detailed information about an event."
+          },
+          "eventTimeStamp": {
+            "type": "integer",
+            "description": "The time at which an event occurred, expressed as a Unix epoch timestamp in milliseconds."
+          },
+          "eventType": {
+            "type": "string",
+            "description": "The type of event specific to a product."
+          },
+          "eventUID": {
+            "type": "string",
+            "description": "Unique identifier for an event."
+          }
+        },
+        "x-go-name": "CallbackRequestAPIModel"
+      },
+      "callbackresponse": {
+        "type": "object",
+        "description": "Callback response data"
+      },
+      "chargeType": {
+        "type": "string",
+        "description": "Type of charge levied for processing the payment.",
+        "enum": [
+          "MDR",
+          "MDR_GST",
+          "COMMISSION",
+          "COMMISSION_GST",
+          "REFUND",
+          "REFUND_GST"
+        ]
+      },
+      "charges": {
+        "required": [
+          "amount",
+          "flatFee",
+          "percentage",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "flatFee": {
+            "type": "string",
+            "description": "FlatFee value for charge calculation.",
+            "example": "4"
+          },
+          "percentage": {
+            "type": "string",
+            "description": "Percentage value for charge calculation.",
+            "example": "18"
+          },
+          "type": {
+            "$ref": "#/components/schemas/chargeType"
+          }
+        }
+      },
+      "computation": {
+        "required": [
+          "method",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "currencyCode": {
+            "type": "string",
+            "description": "Currency code of the amount, in the ISO-4217 standard."
+          },
+          "method": {
+            "type": "string",
+            "description": "The method used to calculate the value of a particular component. This is usually done as a flat fee or a percentage. Some examples could be calculating the processing fees for a bill, or the discount amount for an item.",
+            "enum": [
+              "PERCENTAGE",
+              "VALUE"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "description": "Amount value in the smallest subunit of the currency. If a currency has two or more subunits, use the smallest one. For example, For INR it would be paisa, and for Yen, which has two subunits sen(1/100) and rin(1/1000), it would be rin."
+          }
+        }
+      },
+      "contact": {
+        "required": [
+          "email",
+          "firstName",
+          "phone",
+          "title"
+        ],
+        "type": "object",
+        "description": "Contact person details for a partner entity.",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address of the contact person.",
+            "example": "contact@example.com"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the contact person.",
+            "example": "Arun"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Last name of the contact person. Optional.",
+            "example": "Sharma"
+          },
+          "phone": {
+            "$ref": "#/components/schemas/phone"
+          },
+          "title": {
+            "type": "string",
+            "description": "Job title or role of the contact person.",
+            "example": "CTO"
+          }
+        }
+      },
+      "createActorResponse": {
+        "required": [
+          "actor"
+        ],
+        "type": "object",
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/actor"
+          }
+        },
+        "description": "Details of the created actor ."
+      },
+      "createAppRequest": {
+        "required": [
+          "description",
+          "name",
+          "partnerId"
+        ],
+        "type": "object",
+        "properties": {
+          "bizRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/baseBizRule"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": "string"
+          }
+        }
+      },
+      "createAppResponse": {
+        "required": [
+          "apiKeys",
+          "app"
+        ],
+        "type": "object",
+        "properties": {
+          "apiKeys": {
+            "$ref": "#/components/schemas/apiKeys"
+          },
+          "app": {
+            "$ref": "#/components/schemas/app"
+          }
+        },
+        "description": "Details of the created app ."
+      },
+      "createPartnerResponse": {
+        "required": [
+          "partner"
+        ],
+        "type": "object",
+        "properties": {
+          "partner": {
+            "$ref": "#/components/schemas/partner"
+          }
+        },
+        "description": "Details of the created partner ."
+      },
+      "createPaymentLinkRequest": {
+        "required": [
+          "amountExactness",
+          "billerBillID"
+        ],
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {}
+          },
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "amountExactness": {
+            "$ref": "#/components/schemas/amountExactness"
+          },
+          "billerBillID": {
+            "type": "string",
+            "description": "Unique bill identifier provided by the biller. For GST, it is the CPIN."
+          },
+          "campaignID": {
+            "type": "string",
+            "description": "This can be used to group payment links."
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "Expiry date of the paymentLink in the ISO 8601 format, upto seconds precision.",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string",
+            "description": "Payee name to be populated in the Payment Link."
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/settlementConfiguration"
+          },
+          "transactionNote": {
+            "maxLength": 80,
+            "type": "string",
+            "description": "Used to show a note on payer app",
+            "example": "Payment for loan 123"
+          },
+          "validationRules": {
+            "$ref": "#/components/schemas/validationRules"
+          }
+        },
+        "example": {
+          "amount": {
+            "currencyCode": "INR",
+            "value": 20000
+          },
+          "amountExactness": "EXACT",
+          "billerBillID": "918147077472",
+          "expiryDate": "2022-05-15T12:23:50Z",
+          "name": "Setu Payment Links Test",
+          "settlement": {
+            "parts": [
+              {
+                "account": {
+                  "id": "Biller-External-002",
+                  "ifsc": "KKBK0000001"
+                },
+                "remarks": "EXACT sample split",
+                "split": {
+                  "unit": "INR",
+                  "value": 10000
+                }
+              }
+            ],
+            "primaryAccount": {
+              "id": "Biller-External-001",
+              "ifsc": "KKBK0000001"
+            }
+          }
+        },
+        "x-go-name": "PaymentLinkAPIModel"
+      },
+      "createPaymentLinkResponse": {
+        "type": "object",
+        "properties": {
+          "campaignID": {
+            "type": "string",
+            "description": "Campaign identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of bill."
+          },
+          "paymentLink": {
+            "$ref": "#/components/schemas/vPAPaymentAddress"
+          },
+          "platformBillID": {
+            "type": "string",
+            "description": "Unique identifier of bill in Setu."
+          }
+        },
+        "example": {
+          "name": "Setu Payment Links Test",
+          "paymentLink": {
+            "shortURL": "https://sandbox.bills.pe/8tA2TQd",
+            "upiID": "nareshlocal@kaypay",
+            "upiLink": "upi://pay?pa=nareshlocal@kaypay&pn=Setu%20Payment%20Links%20Test&am=200.00&tr=875621444531258946&tn=Payment%20for%20918147077472&cu=INR&mode=04"
+          },
+          "platformBillID": "875621444531258946"
+        }
+      },
+      "customer": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {},
+            "description": "Additional details of the customer in the biller system."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the customer in the biller system."
+          }
+        },
+        "description": "Details of a customer in the biller system."
+      },
+      "customerAccount": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {},
+            "description": "Additional details for the customer account in the biller system."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique identifier of the customer account in the biller system."
+          }
+        },
+        "description": "Details of a customer account in the biller system."
+      },
+      "customerIdentifier": {
+        "required": [
+          "attributeName",
+          "attributeValue"
+        ],
+        "type": "object",
+        "properties": {
+          "attributeName": {
+            "type": "string",
+            "description": "Attribute used to identify a customer of a biller. Could be phone number, PAN or email, depending on the biller."
+          },
+          "attributeValue": {
+            "type": "string",
+            "description": "Value of the above customer identifier of a biller. This is entered by the customer in the payer app."
+          }
+        },
+        "description": "Unique customer identifier for a particular biller."
+      },
+      "deductionParts": {
+        "required": [
+          "account",
+          "split"
+        ],
+        "type": "object",
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/splitAccount"
+          },
+          "split": {
+            "$ref": "#/components/schemas/splitDetails"
+          }
+        },
+        "description": "Account and split details for the deduction."
+      },
+      "discount": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "code": {
+            "type": "string",
+            "description": "Coupon or voucher used to apply the discount."
+          },
+          "computation": {
+            "$ref": "#/components/schemas/computation"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason why the discount was applied."
+          }
+        },
+        "description": "Contains details about the discount in a particular bill, if available. In a given bill, there could be upto three kinds of discount, bill-level, item-level and fee-level."
+      },
+      "error": {
+        "required": [
+          "code",
+          "detail",
+          "docURL",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Custom Setu error code."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Detailed description of error."
+          },
+          "docURL": {
+            "type": "string",
+            "description": "Link to reference document with details about the error."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short human-readable summary of error."
+          }
+        },
+        "x-go-name": "ErrorAPIModel"
+      },
+      "errorResponse": {
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/errorResponseData"
+          }
+        },
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/baseResponse"
+          }
+        ],
+        "x-go-name": "ErrorResponseAPIModel"
+      },
+      "errorResponseData": {
+        "required": [
+          "traceID"
+        ],
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "List of specific child errors for this request.",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "traceID": {
+            "type": "string",
+            "description": "Unique trace request identifier for tracing and debugging. Provide this to Setu support."
+          }
+        },
+        "description": "Object containing data about the error.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error"
+          }
+        ],
+        "x-go-name": "ErrorResponseDataAPIModel"
+      },
+      "eventDetails": {
+        "required": [
+          "data",
+          "id",
+          "timeStamp",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {},
+            "description": "Payload of an event which contains detailed information about an event."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for an event."
+          },
+          "timeStamp": {
+            "type": "integer",
+            "description": "The time at which an event occured. It is denoted in milliseconds from the Unix epoch."
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of event generated by this appID and productInstanceID."
+          }
+        },
+        "description": "Details about the event."
+      },
+      "feeAggregates": {
+        "required": [
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "discount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "subTotal": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "tax": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "total": {
+            "$ref": "#/components/schemas/amount"
+          }
+        },
+        "description": "Aggregate section for fees"
+      },
+      "fees": {
+        "required": [
+          "aggregates",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "aggregates": {
+            "$ref": "#/components/schemas/feeAggregates"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the fees."
+          },
+          "discounts": {
+            "type": "array",
+            "description": "Contains discounts on the fees.",
+            "items": {
+              "$ref": "#/components/schemas/discount"
+            }
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the fees."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Total number of fee quantity."
+          },
+          "taxes": {
+            "type": "array",
+            "description": "Contains taxes on the fees.",
+            "items": {
+              "$ref": "#/components/schemas/itemTax"
+            }
+          },
+          "unitCost": {
+            "$ref": "#/components/schemas/amount"
+          }
+        },
+        "description": "Fees levied on the bill or individual items."
+      },
+      "fetchBillReceiptResponse": {
+        "required": [
+          "receipt"
+        ],
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "$ref": "#/components/schemas/billReceipt"
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/settlementConfiguration"
+          }
+        }
+      },
+      "fetchBillersResponse": {
+        "type": "object",
+        "properties": {
+          "billers": {
+            "type": "array",
+            "description": "List of registered billers.",
+            "items": {
+              "$ref": "#/components/schemas/biller"
+            }
+          }
+        }
+      },
+      "fetchBillsDetails": {
+        "required": [
+          "billFetchStatus",
+          "bills"
+        ],
+        "type": "object",
+        "properties": {
+          "billFetchStatus": {
+            "$ref": "#/components/schemas/billFetchStatus"
+          },
+          "bills": {
+            "type": "array",
+            "description": "List of outstanding bills.",
+            "items": {
+              "$ref": "#/components/schemas/bill"
+            }
+          }
+        },
+        "description": "Details of the bill to be paid.",
+        "x-go-name": "FetchBillDetailsAPIModel"
+      },
+      "fetchBillsRequest": {
+        "required": [
+          "billerProductInstanceID",
+          "customerIdentifiers"
+        ],
+        "type": "object",
+        "properties": {
+          "billerProductInstanceID": {
+            "type": "string",
+            "description": "Unique identifier of the biller product instance in Setu."
+          },
+          "campaignID": {
+            "type": "string",
+            "description": "Unique identifier of the biller campaign."
+          },
+          "customerIdentifiers": {
+            "type": "array",
+            "description": "Used to validate the customer account and fetch the bill details.",
+            "items": {
+              "$ref": "#/components/schemas/billerCustomerIdentifier"
+            }
+          },
+          "refID": {
+            "type": "string",
+            "description": "Unique alphanumeric BBPS Reference ID sent by NPCI"
+          }
+        },
+        "description": "Fetch bill request payload"
+      },
+      "fetchBillsResponse": {
+        "required": [
+          "bills"
+        ],
+        "type": "object",
+        "properties": {
+          "bills": {
+            "type": "array",
+            "description": "List of bills for the supplied customer identifiers.",
+            "items": {
+              "$ref": "#/components/schemas/platformBill"
+            }
+          }
+        },
+        "description": "Details of bills for the supplied customer identifiers."
+      },
+      "fetchCodeVersionResponse": {
+        "required": [
+          "commit_sha"
+        ],
+        "type": "object",
+        "properties": {
+          "commit_sha": {
+            "type": "string",
+            "description": "GitLab commit-ID of the deployed code"
+          }
+        },
+        "description": "Fetch Code version response data",
+        "x-go-name": "FetchCodeVersionResponseAPIModel"
+      },
+      "fetchDbVersionResponse": {
+        "type": "object",
+        "properties": {
+          "applied_migrations": {
+            "type": "array",
+            "description": "A collection of individual migrations applied till date.",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "current_db_version": {
+            "type": "integer",
+            "description": "Current version[migration] of the DB."
+          }
+        },
+        "description": "Fetch DB version response data",
+        "x-go-name": "FetchDbVersionResponseAPIModel"
+      },
+      "fetchPayerLinkRequest": {
+        "type": "object",
+        "properties": {
+          "clientID": {
+            "type": "string",
+            "description": "clientID from the V2 API key pair"
+          },
+          "secret": {
+            "type": "string",
+            "description": "secret from the V2 API key pair"
+          }
+        },
+        "description": "Fetch payer link and one-time token API payload"
+      },
+      "fetchPayerLinkResponse": {
+        "required": [
+          "token",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "One-time auth token to be used to retrieve the JWT for subsequent API requests"
+          },
+          "url": {
+            "type": "string",
+            "description": "The PWA redirect URL"
+          }
+        }
+      },
+      "fetchReceiptRequest": {
+        "required": [
+          "billerBillID",
+          "paymentDetails",
+          "platformBillID"
+        ],
+        "type": "object",
+        "properties": {
+          "billerBillID": {
+            "type": "string",
+            "description": "Unique bill identifier in the biller's system."
+          },
+          "paymentDetails": {
+            "required": [
+              "amountPaid",
+              "platformTransactionRefID"
+            ],
+            "type": "object",
+            "properties": {
+              "additionalInfo": {
+                "type": "object",
+                "properties": {},
+                "description": "Placeholder for any additional info that will be sent with the request."
+              },
+              "amountPaid": {
+                "$ref": "#/components/schemas/amount"
+              },
+              "billAmount": {
+                "$ref": "#/components/schemas/amount"
+              },
+              "campaignID": {
+                "type": "string",
+                "description": "Unique identifier of the biller campaign."
+              },
+              "instrument": {
+                "type": "string",
+                "description": "Payment method used to pay the bill."
+              },
+              "transactionNote": {
+                "maxLength": 80,
+                "type": "string",
+                "description": "Used to show a note on payer app",
+                "example": "Payment for loan 123"
+              },
+              "uniquePaymentRefID": {
+                "type": "string",
+                "description": "Unique BBPS Transaction Reference ID sent by NPCI for the transaction"
+              },
+              "platformTransactionRefID": {
+                "type": "string",
+                "description": "Unique reference identifier generated by Setu Platform for the transaction"
+              },
+              "transactionTimestamp": {
+                "type": "string",
+                "description": "Transaction Timestamp in UTC"
+              }
+            },
+            "description": "Details highlighting the payment of a bill."
+          },
+          "platformBillID": {
+            "type": "string",
+            "description": "Unique bill identifier in the Setu system."
+          }
+        }
+      },
+      "fetchTokenRequest": {
+        "type": "object",
+        "properties": {
+          "clientID": {
+            "type": "string",
+            "description": "clientID from the V2 API key pair"
+          },
+          "secret": {
+            "type": "string",
+            "description": "secret from the V2 API key pair"
+          }
+        },
+        "description": "Fetch Token API payload"
+      },
+      "fetchTokenResponse": {
+        "required": [
+          "expiresIn",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "expiresIn": {
+            "type": "integer",
+            "description": "Token expiry duration in seconds"
+          },
+          "token": {
+            "type": "string",
+            "description": "Token to be used in subsequent requests"
+          }
+        }
+      },
+      "fulfilmentPaymentDetails": {
+        "required": [
+          "amount",
+          "instrument",
+          "paidOn"
+        ],
+        "type": "object",
+        "properties": {
+          "accountIdentifier": {
+            "type": "string",
+            "description": "The masked digits of the account used. In case of `CC` / `DC` / `PREPAID`, it is the last 4 digits of the Card Number. In case of  `NEFT` / `RTGS` / `IFT` / `IMPS`, it is the last 4 digits of the Account Number. In case of `UPI`, it is the VPA. In case of  `PPI` / `CASH`, it is the last 4 digits of Mobile Number."
+          },
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/paymentInstrument"
+          },
+          "paidOn": {
+            "type": "string",
+            "description": "Payment date of the bill in the ISO 8601 format, upto seconds precision.",
+            "format": "date-time"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/paymentSchemes"
+          },
+          "utr": {
+            "type": "string",
+            "description": "Bank UTR for the bill payment made by the customer or the challan number in case of CASH payments."
+          }
+        }
+      },
+      "getActorByIdResponse": {
+        "required": [
+          "actor"
+        ],
+        "type": "object",
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/actor"
+          }
+        },
+        "description": "Details of actor for the supplied actor identifier."
+      },
+      "getAppByIdResponse": {
+        "required": [
+          "app"
+        ],
+        "type": "object",
+        "properties": {
+          "app": {
+            "$ref": "#/components/schemas/app"
+          }
+        },
+        "description": "Details of app for the supplied app identifier."
+      },
+      "getPartnerByIdResponse": {
+        "required": [
+          "partner"
+        ],
+        "type": "object",
+        "properties": {
+          "partner": {
+            "$ref": "#/components/schemas/partner"
+          }
+        },
+        "description": "Details of partner for the supplied partner identifier."
+      },
+      "getReportRequest": {
+        "required": [
+          "productInstanceIDOfReport"
+        ],
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "object",
+            "properties": {},
+            "description": "Payload containing the filters to be applied."
+          },
+          "productInstanceIDOfReport": {
+            "type": "string",
+            "description": "The unique identifier of the product instance in app for which the report is fetched."
+          }
+        },
+        "description": "get report request payload"
+      },
+      "getReportResponse": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "properties": {},
+            "description": "Basic information about what is contained in the report."
+          },
+          "records": {
+            "type": "array",
+            "description": "A collection of individual data fields in a report.",
+            "items": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "reportDetails": {
+            "type": "object",
+            "properties": {},
+            "description": "(Deprecated)Basic information about what is contained in the report."
+          }
+        },
+        "description": "Report response data",
+        "x-go-name": "ReportResponseAPIModel"
+      },
+      "itemAggregates": {
+        "required": [
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "discount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "subTotal": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "tax": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "total": {
+            "$ref": "#/components/schemas/amount"
+          }
+        },
+        "description": "Aggregate section for item."
+      },
+      "itemQuantity": {
+        "required": [
+          "displayName",
+          "quantity"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the quantity on payers app."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Total number of items in the bill."
+          }
+        }
+      },
+      "itemTax": {
+        "required": [
+          "amount",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "components": {
+            "type": "array",
+            "description": "Parent object containing the breakdown of individual tax components at the item level.",
+            "items": {
+              "$ref": "#/components/schemas/taxComponent"
+            }
+          },
+          "computation": {
+            "$ref": "#/components/schemas/computation"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the item tax applied on the particular item."
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of tax component levied."
+          }
+        },
+        "description": "Tax parent object containing all the relevant taxes and their individual components at the item-level."
+      },
+      "items": {
+        "required": [
+          "aggregates",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "aggregates": {
+            "$ref": "#/components/schemas/itemAggregates"
+          },
+          "code": {
+            "type": "string",
+            "description": "Unique code for the item in the biller system."
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description."
+          },
+          "discounts": {
+            "type": "array",
+            "description": "Contains discounts on the items.",
+            "items": {
+              "$ref": "#/components/schemas/discount"
+            }
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the item on the payer app."
+          },
+          "fees": {
+            "type": "array",
+            "description": "Array of fees per item.",
+            "items": {
+              "$ref": "#/components/schemas/fees"
+            }
+          },
+          "measurementUnit": {
+            "type": "string",
+            "description": "Unit of measurement for the item.",
+            "enum": [
+              "WEIGHT",
+              "VOLUME",
+              "NUMBER"
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Total number of items of one type."
+          },
+          "taxes": {
+            "type": "array",
+            "description": "Contains taxes on the items.",
+            "items": {
+              "$ref": "#/components/schemas/itemTax"
+            }
+          },
+          "unitPrice": {
+            "$ref": "#/components/schemas/amount"
+          }
+        },
+        "description": "Line items for the bill."
+      },
+      "kotakUpiCallbackRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "description": "Encrypted request data."
+          }
+        },
+        "x-go-name": "KotakUpiCallbackRequestAPIModel"
+      },
+      "listActorsResponse": {
+        "required": [
+          "actors"
+        ],
+        "type": "object",
+        "properties": {
+          "actors": {
+            "type": "array",
+            "description": "Details of actors for the supplied actor identifiers.",
+            "items": {
+              "$ref": "#/components/schemas/actor"
+            }
+          }
+        }
+      },
+      "listAppsResponse": {
+        "required": [
+          "apps"
+        ],
+        "type": "object",
+        "properties": {
+          "apps": {
+            "type": "array",
+            "description": "Details of apps for the supplied app identifiers.",
+            "items": {
+              "$ref": "#/components/schemas/app"
+            }
+          }
+        }
+      },
+      "listPartnersResponse": {
+        "required": [
+          "partners"
+        ],
+        "type": "object",
+        "properties": {
+          "partners": {
+            "type": "array",
+            "description": "Details of partners for the supplied partner identifiers.",
+            "items": {
+              "$ref": "#/components/schemas/partner"
+            }
+          }
+        }
+      },
+      "notificationRequest": {
+        "required": [
+          "events",
+          "partnerDetails"
+        ],
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "description": "Array of events.",
+            "items": {
+              "$ref": "#/components/schemas/eventDetails"
+            }
+          },
+          "partnerDetails": {
+            "$ref": "#/components/schemas/partnerDetails"
+          }
+        },
+        "x-go-name": "NotificationRequestAPIModel"
+      },
+      "partner": {
+        "allOf": [
+          {
+            "required": [
+              "createdAt",
+              "id",
+              "lastModifiedAt"
+            ],
+            "type": "object",
+            "properties": {
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "id": {
+                "type": "string"
+              },
+              "lastModifiedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/basePartner"
+          }
+        ]
+      },
+      "partnerDetails": {
+        "required": [
+          "appID",
+          "productInstanceID"
+        ],
+        "type": "object",
+        "properties": {
+          "appID": {
+            "type": "string",
+            "description": "Unique identifier for the app."
+          },
+          "productInstanceID": {
+            "type": "string",
+            "description": "Unique identifier for the product instance."
+          }
+        },
+        "description": "Details about the partner."
+      },
+      "paymentAddress": {
+        "required": [
+          "additionalInfo",
+          "addressType",
+          "identifier"
+        ],
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {},
+            "description": "Payment address details for this type."
+          },
+          "addressType": {
+            "$ref": "#/components/schemas/paymentAddressType"
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Unique identifier of payment address. For ACCOUNT type, it will be AccountID."
+          }
+        },
+        "description": "Payment address info where funds can be deposited."
+      },
+      "paymentAddressType": {
+        "type": "string",
+        "description": "Type of payment address. `ACCOUNT` — a Virtual Account Number (VAN) to which funds are transferred via NEFT/IMPS/RTGS. `VPA` — a UPI Virtual Payment Address (VPA/UPI ID) for UPI payments.",
+        "enum": [
+          "ACCOUNT",
+          "VPA"
+        ]
+      },
+      "paymentBase": {
+        "required": [
+          "amount",
+          "destinationAccount",
+          "sourceAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Amount for the mock credit in rupees.",
+            "format": "double"
+          },
+          "destinationAccount": {
+            "$ref": "#/components/schemas/bankAccount"
+          },
+          "sourceAccount": {
+            "$ref": "#/components/schemas/bankAccount"
+          },
+          "transactionReference": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/baseType"
+          }
+        },
+        "example": {
+          "amount": 200,
+          "destinationAccount": {
+            "accountID": "nareshlocal@kaypay"
+          },
+          "sourceAccount": {
+            "accountID": "saainithil97@icici"
+          },
+          "transactionReference": "875621444531258946",
+          "type": "UPI"
+        },
+        "x-go-name": "DummyBankPaymentBaseAPIModel"
+      },
+      "paymentInstrument": {
+        "type": "string",
+        "description": "Payment instrument used by the customer. `UPI` — Unified Payments Interface. `NEFT`/`RTGS`/`IMPS`/`IFT` — bank transfer methods. `CC`/`DC` — credit/debit card (short codes). `Credit Card`/`Debit Card` — verbose card labels. `CASH` — cash payment. `Wallet`/`PPI`/`Prepaid Card` — prepaid instruments. `AEPS` — Aadhaar-enabled Payment System. `Bharat QR` — QR-code-based payment. `USSD` — feature-phone payment. `Rupay Credit` — RuPay credit card.",
+        "enum": [
+          "UPI",
+          "CASH",
+          "NEFT",
+          "RTGS",
+          "IMPS",
+          "IFT",
+          "CC",
+          "DC",
+          "Prepaid",
+          "Internet Banking",
+          "Debit Card",
+          "Credit Card",
+          "Cash",
+          "Wallet",
+          "Prepaid Card",
+          "AEPS",
+          "Account Transfer",
+          "Bharat QR",
+          "USSD",
+          "PPI",
+          "Rupay Credit"
+        ]
+      },
+      "paymentLinkStatusResponse": {
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "type": "object",
+            "properties": {}
+          },
+          "amountPaid": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "billerBillID": {
+            "type": "string",
+            "description": "Unique bill identifier in the biller's system."
+          },
+          "campaignID": {
+            "type": "string",
+            "description": "Campaign ID from the biller, used to group related payment links."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Creation date of the paymentLink in the format \\\"2019-08-01T08:28:12Z\\\".",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "Expiry date of the paymentLink in the format \\\"2019-08-01T08:28:12Z\\\".",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of bill."
+          },
+          "payerVpa": {
+            "type": "string",
+            "description": "Vpa address of a payer"
+          },
+          "paymentLink": {
+            "$ref": "#/components/schemas/vPAPaymentAddress"
+          },
+          "platformBillID": {
+            "type": "string",
+            "description": "Unique identifier of bill in Setu."
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/billReceipt"
+          },
+          "status": {
+            "$ref": "#/components/schemas/setuBillStatus"
+          },
+          "transactionNote": {
+            "type": "string",
+            "description": "Used to show a note on payer app",
+            "example": "Payment for loan 123"
+          }
+        },
+        "example": {
+          "amountPaid": {
+            "currencyCode": "INR",
+            "value": 20000
+          },
+          "billerBillID": "918147077472",
+          "createdAt": "2022-04-18T13:55:00.000Z",
+          "expiresAt": "2022-05-15T12:23:50.000Z",
+          "name": "Setu Payment Links Test",
+          "payerVpa": "saainithil97@icici",
+          "paymentLink": {
+            "upiID": "nareshlocal@kaypay",
+            "upiLink": "upi://pay?pa=nareshlocal@kaypay&pn=Setu%20Payment%20Links%20Test&am=200.00&tr=875621444531258946&tn=Payment%20for%20918147077472&cu=INR&mode=04"
+          },
+          "platformBillID": "875621444531258946",
+          "receipt": {
+            "date": "2022-04-18T13:55:41.000Z",
+            "id": "2801283953906381"
+          },
+          "status": "PAYMENT_SUCCESSFUL",
+          "transactionNote": "Payment for 918147077472"
+        }
+      },
+      "paymentResponse": {
+        "type": "object",
+        "description": "Response returned after a payment is processed.",
+        "properties": {
+          "utr": {
+            "type": "string",
+            "description": "Unique Transaction Reference (UTR) number assigned by the bank for this payment. Provided for NEFT/RTGS/IMPS transactions; may be absent for UPI payments."
+          }
+        }
+      },
+      "paymentSchemes": {
+        "type": "string",
+        "description": "Payment schemes supported by Setu.",
+        "enum": [
+          "NETBANKING",
+          "AMEX",
+          "DINERS",
+          "DISCOVER",
+          "JCB",
+          "MAESTRO",
+          "MASTERCARD",
+          "RUPAY",
+          "VISA",
+          "OTHER",
+          "NONE"
+        ]
+      },
+      "phone": {
+        "required": [
+          "countryCode",
+          "number"
+        ],
+        "type": "object",
+        "description": "Phone number details.",
+        "properties": {
+          "countryCode": {
+            "type": "string",
+            "description": "Country dialling code without the leading `+`.",
+            "example": "91"
+          },
+          "extension": {
+            "type": "string",
+            "description": "Office extension number, if applicable.",
+            "example": "204"
+          },
+          "number": {
+            "type": "string",
+            "description": "Local phone number without the country code.",
+            "example": "9876543210"
+          }
+        }
+      },
+      "platformBill": {
+        "required": [
+          "deemedBillStatus",
+          "name",
+          "paymentAddresses",
+          "platformBillID",
+          "platformBillStatus"
+        ],
+        "properties": {
+          "deemedBillStatus": {
+            "$ref": "#/components/schemas/setuBillDeemedStatus"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of bill."
+          },
+          "paymentAddresses": {
+            "type": "array",
+            "description": "Payment addresses such as a VAN or a VPA to which the funds to pay the bill needs to be sent.",
+            "items": {
+              "$ref": "#/components/schemas/paymentAddress"
+            }
+          },
+          "platformBillID": {
+            "type": "string",
+            "description": "Unique identifier of bill in Setu."
+          },
+          "platformBillStatus": {
+            "$ref": "#/components/schemas/setuBillStatus"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/billReceiptWithStatus"
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/settlementConfiguration"
+          }
+        },
+        "description": "Bill entity data.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/billBase"
+          }
+        ]
+      },
+      "processingFees": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "charges": {
+            "type": "array",
+            "description": "Charges applicable for the transaction made.",
+            "items": {
+              "$ref": "#/components/schemas/charges"
+            }
+          }
+        },
+        "description": "Fees involved in processing a particular bill payment / refund."
+      },
+      "productInstance": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier of a biller product instance in Setu."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the biller product instance in Setu."
+          }
+        },
+        "description": "Biller product details such as the ID and Name."
+      },
+      "receiptFetchStatus": {
+        "type": "string",
+        "description": "Indicates whether the biller supports fetching a payment receipt. `AVAILABLE` — biller provides receipts via the `fetchReceipt` endpoint. `NOT_SUPPORTED` — biller does not implement the receipt endpoint. `UNAVAILABLE` — biller supports receipts but is currently unable to provide one. `DEEMED` — receipt is auto-generated by Setu for a deemed payment.",
+        "enum": [
+          "AVAILABLE",
+          "NOT_SUPPORTED",
+          "UNAVAILABLE",
+          "DEEMED"
+        ]
+      },
+      "refundRequestItem": {
+        "required": [
+          "identifier",
+          "identifierType",
+          "refundType"
+        ],
+        "type": "object",
+        "properties": {
+          "deductions": {
+            "type": "array",
+            "description": "List of accounts to deduct refund from. Required only if original bill had split settlements specified.",
+            "items": {
+              "$ref": "#/components/schemas/deductionParts"
+            }
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Unique identifier value representing the transaction to be refunded"
+          },
+          "identifierType": {
+            "$ref": "#/components/schemas/refundRequestItemIdentifierType"
+          },
+          "refundAmount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "refundType": {
+            "$ref": "#/components/schemas/refundRequestItemAmountType"
+          }
+        }
+      },
+      "refundRequestItemAmountType": {
+        "type": "string",
+        "description": "Type of refund. Can be either FULL or PARTIAL. If PARTIAL, refundAmount should also be specified.",
+        "enum": [
+          "FULL",
+          "PARTIAL"
+        ]
+      },
+      "refundRequestItemIdentifierType": {
+        "type": "string",
+        "description": "Type of identifier. Currently, only BILL_ID is supported.",
+        "enum": [
+          "BILL_ID"
+        ]
+      },
+      "refundResponseItem": {
+        "type": "object",
+        "description": "Details of an individual refund transaction.",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "billID": {
+            "type": "string",
+            "description": "Setu `platformBillID` of the bill against which the refund was raised."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Timestamp when the refund record was created in Setu, in ISO 8601 format (e.g., `2019-08-01T08:28:12Z`).",
+            "format": "date-time"
+          },
+          "deductions": {
+            "type": "array",
+            "description": "List of accounts from which the refund amount is deducted. Required only if the original bill had split settlements.",
+            "items": {
+              "$ref": "#/components/schemas/deductionParts"
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this refund record in Setu."
+          },
+          "initiatedAt": {
+            "type": "string",
+            "description": "Timestamp when the refund was initiated to the bank, in ISO 8601 format. Null if not yet initiated.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the refund (e.g., `PENDING`, `SUCCESS`, `FAILED`)."
+          },
+          "transactionRefID": {
+            "type": "string",
+            "description": "Bank transaction reference ID for the refund transfer."
+          },
+          "type": {
+            "type": "string",
+            "description": "Refund type — `FULL` or `PARTIAL`."
+          }
+        }
+      },
+      "settlementAggregates": {
+        "required": [
+          "payment",
+          "refund",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "payment": {
+            "$ref": "#/components/schemas/transactionTotal"
+          },
+          "refund": {
+            "$ref": "#/components/schemas/transactionTotal"
+          },
+          "total": {
+            "$ref": "#/components/schemas/transactionCount"
+          }
+        },
+        "description": "Aggregates section for settlement."
+      },
+      "settlementBase": {
+        "required": [
+          "transactions"
+        ],
+        "type": "object",
+        "description": "Base payload for a mock/test settlement, used in sandbox environments to simulate fund credits.",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "description": "List of mock settlement transactions to simulate.",
+            "items": {
+              "$ref": "#/components/schemas/settlementTransaction"
+            }
+          }
+        },
+        "x-go-name": "DummySettlementBaseAPIModel"
+      },
+      "settlementConfiguration": {
+        "required": [
+          "primaryAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "parts": {
+            "type": "array",
+            "description": "Array of settlement parts which have to be split.",
+            "items": {
+              "$ref": "#/components/schemas/settlementParts"
+            }
+          },
+          "primaryAccount": {
+            "$ref": "#/components/schemas/splitAccount"
+          }
+        },
+        "description": "Contains the settlement configuration for the bill."
+      },
+      "settlementConfigurationWithoutParts": {
+        "required": [
+          "primaryAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "primaryAccount": {
+            "$ref": "#/components/schemas/splitAccount"
+          }
+        },
+        "description": "Contains the settlement configuration for the bill."
+      },
+      "settlementParts": {
+        "required": [
+          "account"
+        ],
+        "type": "object",
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/splitAccount"
+          },
+          "remarks": {
+            "type": "string",
+            "description": "Remarks if any for this split transaction."
+          },
+          "split": {
+            "$ref": "#/components/schemas/splitDetails"
+          }
+        },
+        "description": "Part of the bill which has to be split and settled."
+      },
+      "settlementTransaction": {
+        "required": [
+          "utr"
+        ],
+        "type": "object",
+        "description": "Represents a single bank transaction used to identify a settlement.",
+        "properties": {
+          "utr": {
+            "type": "string",
+            "description": "Unique Transaction Reference (UTR) number of the bank transaction. Setu uses this to match the incoming credit against a pending bill."
+          }
+        }
+      },
+      "setuBillDeemedStatus": {
+        "type": "string",
+        "description": "Deemed payment status of a bill. A 'deemed' payment is one where the customer's funds were debited but the biller did not receive an acknowledgement in time, so the payment is considered complete by policy. `NOT_DEEMED` — no deemed payment scenario. `DEEMED` — bill is deemed paid after a timeout. `DEEMED_RETRY_SUCCESSFUL` — a retry to the biller after deeming succeeded. `DEEMED_RETRY_FAILED` — retry to the biller after deeming failed.",
+        "enum": [
+          "NOT_DEEMED",
+          "DEEMED",
+          "DEEMED_RETRY_SUCCESSFUL",
+          "DEEMED_RETRY_FAILED"
+        ]
+      },
+      "setuBillStatus": {
+        "type": "string",
+        "description": "Current lifecycle status of a bill in the Setu platform. `BILL_CREATED` — bill is created and awaiting payment. `PAYMENT_SUCCESSFUL` — a payment was received and acknowledged by the biller. `PAYMENT_FAILED` — payment was attempted but failed. `PAYMENT_ATTEMPT_FAILED` — a payment attempt failed before reaching the biller. `CREDIT_RECEIVED` — funds have been received by Setu's VAN. `SETTLEMENT_SUCCESSFUL` — funds have been settled to the biller's account. `SETTLEMENT_FAILED` — settlement attempt failed. `BILL_EXPIRED` — bill has passed its due date or was manually expired.",
+        "enum": [
+          "BILL_CREATED",
+          "PAYMENT_SUCCESSFUL",
+          "PAYMENT_FAILED",
+          "CREDIT_RECEIVED",
+          "SETTLEMENT_SUCCESSFUL",
+          "SETTLEMENT_FAILED",
+          "BILL_EXPIRED",
+          "PAYMENT_ATTEMPT_FAILED"
+        ]
+      },
+      "sourceAccount": {
+        "required": [
+          "ifsc",
+          "number"
+        ],
+        "type": "object",
+        "properties": {
+          "ifsc": {
+            "pattern": "[a-zA-Z0-9]",
+            "type": "string",
+            "description": "IFSC code of the source account."
+          },
+          "number": {
+            "pattern": "[a-zA-Z0-9]",
+            "type": "string",
+            "description": "Account number of the source account."
+          }
+        }
+      },
+      "sourceAccounts": {
+        "type": "array",
+        "description": "List of source accounts that can be used to pay the bill.",
+        "items": {
+          "$ref": "#/components/schemas/sourceAccount"
+        }
+      },
+      "splitAccount": {
+        "required": [
+          "id",
+          "ifsc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Beneficiary account id as in Setu's biller actor configuration."
+          },
+          "ifsc": {
+            "type": "string",
+            "description": "Beneficiary account IFSC as in Setu's biller actor configuration."
+          },
+          "name": {
+            "type": "string",
+            "description": "Beneficiary account name as in Setu's biller actor configuration."
+          }
+        },
+        "description": "Details of the settlement account to which a split has to be settled.",
+        "nullable": true,
+        "x-nullable": true
+      },
+      "splitDetails": {
+        "required": [
+          "unit",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "unit": {
+            "$ref": "#/components/schemas/splitUnit"
+          },
+          "value": {
+            "type": "number",
+            "description": "The value of the split. The value will be an integer in case of `INR` and `BPS`, float in case of `PERCENTAGE`."
+          }
+        },
+        "description": "Details of split to be processed."
+      },
+      "splitUnit": {
+        "type": "string",
+        "description": "Unit used to express a settlement split value. `INR` — absolute amount in rupees (integer). `INP` — absolute amount in paise/smallest subunit (integer). `PERCENTAGE` — percentage of the total amount (float, e.g., `10.5` for 10.5%). `BPS` — basis points (integer, e.g., `500` for 5%).",
+        "enum": [
+          "BPS",
+          "PERCENTAGE",
+          "INR",
+          "INP"
+        ]
+      },
+      "taxComponent": {
+        "required": [
+          "amount",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "computation": {
+            "$ref": "#/components/schemas/computation"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the particular tax component shown on the payer's app (e.g., 'CGST', 'SGST')."
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of tax component levied. In a given bill, this will be the breakup of the different types of tax applied."
+          }
+        },
+        "description": "Describes the tax levied on a particular bill. In a given bill, there could be upto three kinds of taxes, bill-level, item-level and fee-level."
+      },
+      "transactionAggregate": {
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          }
+        },
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/transactionCount"
+          }
+        ]
+      },
+      "transactionCount": {
+        "required": [
+          "transactionCount"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionCount": {
+            "type": "number",
+            "description": "Total number of transactions made in the process.",
+            "format": "integer"
+          }
+        }
+      },
+      "transactionTotal": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "$ref": "#/components/schemas/transactionAggregate"
+          }
+        }
+      },
+      "transactionType": {
+        "type": "string",
+        "description": "Transaction type for a bill.",
+        "enum": [
+          "PAYMENT",
+          "REFUND"
+        ]
+      },
+      "transactions": {
+        "required": [
+          "amount",
+          "instrument",
+          "platformBillID",
+          "type",
+          "utr"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "date": {
+            "type": "string",
+            "description": "Payment date as in the MIS file."
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/paymentInstrument"
+          },
+          "platformBillID": {
+            "type": "string",
+            "description": "Unique identifier of bill in Setu."
+          },
+          "processingFees": {
+            "$ref": "#/components/schemas/processingFees"
+          },
+          "type": {
+            "$ref": "#/components/schemas/transactionType"
+          },
+          "utr": {
+            "type": "string",
+            "description": "Bank UTR for the bill payment/ refund made by/to the customer."
+          }
+        },
+        "description": "Individual transaction details of the settlement made by the payment processor."
+      },
+      "updateActor": {
+        "type": "object",
+        "description": "Payload for updating an actor's mutable fields. Only include fields you want to change — omitted fields retain their current values.",
+        "properties": {
+          "configuration": {
+            "type": "object",
+            "properties": {},
+            "description": "Updated actor-specific configuration. Replaces the existing configuration entirely; provide the full desired config object."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Updated human-readable description for this actor. Set to `null` to clear."
+          },
+          "enableHttpSignature": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Set to `true` to enable HTTP signature verification on callback requests, or `false` to disable it."
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Updated internal name for this actor. Set to `null` to clear."
+          }
+        }
+      },
+      "updateActorByIdResponse": {
+        "required": [
+          "actor"
+        ],
+        "type": "object",
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/actor"
+          }
+        },
+        "description": "Details of the updated actor ."
+      },
+      "updateApp": {
+        "type": "object",
+        "properties": {
+          "bizRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/upsertBizRule"
+            }
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "updateAppByIdResponse": {
+        "required": [
+          "app"
+        ],
+        "type": "object",
+        "properties": {
+          "app": {
+            "$ref": "#/components/schemas/app"
+          }
+        },
+        "description": "Details of the updated app ."
+      },
+      "updatePartnerByIdResponse": {
+        "required": [
+          "partner"
+        ],
+        "type": "object",
+        "properties": {
+          "partner": {
+            "$ref": "#/components/schemas/partner"
+          }
+        },
+        "description": "Details of the updated partner ."
+      },
+      "updatePartnerRequest": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/address"
+          },
+          "contacts": {
+            "required": [
+              "business"
+            ],
+            "type": "object",
+            "properties": {
+              "business": {
+                "$ref": "#/components/schemas/contact"
+              },
+              "technical": {
+                "$ref": "#/components/schemas/contact"
+              }
+            }
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Legal Name",
+            "nullable": true
+          },
+          "taxIdNum": {
+            "type": "string",
+            "description": "Tax Identification Number",
+            "nullable": true
+          }
+        }
+      },
+      "upsertBizRule": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/baseBizRule"
+          },
+          "id": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "vPAPaymentAddress": {
+        "type": "object",
+        "description": "UPI-based payment address details for a bill. Use `upiLink` to deep-link into any UPI app, `upiID` to display or copy the VPA, and `shortURL` to share a web payment link.",
+        "properties": {
+          "shortURL": {
+            "type": "string",
+            "description": "Shortened HTTPS URL that opens a web-based payment page. Suitable for sharing via SMS or email.",
+            "example": "setu.co/1asd213"
+          },
+          "upiID": {
+            "type": "string",
+            "description": "UPI Virtual Payment Address (VPA) assigned to this bill. The customer can copy this into any UPI app to initiate payment.",
+            "example": "setu-358715582872290627@setubank"
+          },
+          "upiLink": {
+            "type": "string",
+            "description": "Deep link URI conforming to the UPI deep-link specification. Opening this URI on a mobile device launches the device's default UPI app with the payment pre-filled.",
+            "example": "upi://pay?pa=setu-358715582872290627@setubank&pn=Setu&am=1&cu=INR"
+          }
+        }
+      },
+      "validationRequest": {
+        "required": [
+          "billerProductInstanceID",
+          "customerIdentifiers"
+        ],
+        "type": "object",
+        "properties": {
+          "billerProductInstanceID": {
+            "type": "string",
+            "description": "Unique identifier of the biller product instance in Setu."
+          },
+          "campaignID": {
+            "type": "string",
+            "description": "Unique identifier of the biller campaign."
+          },
+          "customerIdentifiers": {
+            "type": "array",
+            "description": "Used to validate the customer account and fetch the bill details.",
+            "items": {
+              "$ref": "#/components/schemas/billerCustomerIdentifier"
+            }
+          },
+          "refID": {
+            "type": "string",
+            "description": "Unique alphanumeric BBPS Reference ID sent by NPCI for this transaction flow. Include this if available to enable end-to-end traceability through the BBPS network."
+          }
+        },
+        "description": "Request payload to validate a customer account with a biller and create a Setu bill."
+      },
+      "validationResponse": {
+        "required": [
+          "bill"
+        ],
+        "type": "object",
+        "properties": {
+          "bill": {
+            "$ref": "#/components/schemas/platformBill"
+          }
+        },
+        "description": "Details of bills for the supplied customer identifiers."
+      },
+      "validationRules": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/amountValidation"
+          },
+          "sourceAccounts": {
+            "$ref": "#/components/schemas/sourceAccounts"
+          }
+        },
+        "description": "Bill validation rules"
+      },
+      "verifyPaymentAddressRequest": {
+        "required": [
+          "RequestData"
+        ],
+        "type": "object",
+        "properties": {
+          "RequestData": {
+            "type": "string",
+            "description": "Encrypted request for VPA verification."
+          }
+        }
+      },
+      "verifyPaymentAddressResponse": {
+        "required": [
+          "ResponseData"
+        ],
+        "type": "object",
+        "properties": {
+          "ResponseData": {
+            "type": "string",
+            "description": "Encrypted response for VPA verification request."
+          }
+        }
+      }
+    }
+  },
+  "x-tagGroups": [
+    {
+      "name": "BBPS Integration",
+      "tags": [
+        "bbps-integration-implement",
+        "bbps-integration-events",
+        "bbps-integration-reports",
+        "bbps-integration"
+      ]
+    }
+  ],
+  "x-original-swagger-version": "2.0"
+}
